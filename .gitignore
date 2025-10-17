@@ -1,0 +1,92 @@
+### JetBrains Rider ###
+.idea/
+*.sln.iml
+
+### Build results ###
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/
+[Tt]emp/
+*.tmp
+*.log
+*.vspscc
+*.user
+*.userosscache
+*.suo
+*.cache
+*.dbmdl
+*.bak
+*.Backup
+*.old
+*.orig
+
+### Visual Studio / Rider local settings ###
+.vs/
+*.DotSettings.user
+*.DotSettings
+*.userprefs
+
+### ASP.NET Core ###
+appsettings.Development.json
+appsettings.*.json
+secrets.json
+Properties/launchSettings.json
+
+### Blazor / WebAssembly ###
+wwwroot/dist/
+wwwroot/build/
+node_modules/
+package-lock.json
+yarn.lock
+
+### Entity Framework ###
+Migrations/obj/
+*.mdf
+*.ldf
+
+### Unit Test output ###
+TestResults/
+*.coverage
+*.coveragexml
+
+### Publish artifacts ###
+*.publish.xml
+publish/
+PublishProfiles/
+*.pubxml
+*.pubxml.user
+
+### Rider caches ###
+.idea/.idea.*
+.idea/**/workspace.xml
+.idea/**/tasks.xml
+.idea/**/dictionaries
+.idea/**/shelf/
+.idea/**/httpRequests
+.idea/**/indexLayout.xml
+
+### Misc ###
+_ReSharper*/
+*.resharper
+*.ncrunch*
+*.sqlite
+*.swp
+*.swo
+
+### OS ###
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+*.lnk
+
+# macOS / Linux
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon?
+.Trashes
+*.swp
+*~

@@ -1,0 +1,31 @@
+using API.Data.Entities;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
+using Microsoft.AspNetCore.Identity;
+
+namespace API.Data;
+
+public class AppDbContext(DbContextOptions options) : IdentityDbContext<User>(options)
+{
+  protected override void OnModelCreating(ModelBuilder builder)
+  {
+    base.OnModelCreating(builder);
+
+    builder.Entity<IdentityRole>().HasData(
+      new IdentityRole
+      {
+        Id = "f0b9d7c0-6d2e-4b0a-9c3e-3d9e1a7f0001",
+        Name = "User",
+        NormalizedName = "USER",
+        ConcurrencyStamp = "4f2c6b77-2a73-4a32-9e0a-111111111111"
+      },
+      new IdentityRole
+      {
+        Id = "f0b9d7c0-6d2e-4b0a-9c3e-3d9e1a7f0002",
+        Name = "Admin",
+        NormalizedName = "ADMIN",
+        ConcurrencyStamp = "4f2c6b77-2a73-4a32-9e0a-222222222222"
+      }
+    );
+  }
+}
