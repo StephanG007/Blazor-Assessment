@@ -154,8 +154,6 @@ namespace API.Data.Migrations
                         .IsUnique();
 
                     b.ToTable("AppointmentSlots");
-
-                    b.Navigation("Booking");
                 });
 
             modelBuilder.Entity("API.Data.Entities.Booking", b =>
@@ -375,7 +373,7 @@ namespace API.Data.Migrations
             modelBuilder.Entity("API.Data.Entities.Booking", b =>
                 {
                     b.HasOne("API.Data.Entities.AppointmentSlot", "AppointmentSlot")
-                        .WithOne("Booking")
+                        .WithMany()
                         .HasForeignKey("API.Data.Entities.Booking", "AppointmentSlotId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();

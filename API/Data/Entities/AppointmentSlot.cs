@@ -14,5 +14,4 @@ public class AppointmentSlot
 
     public Clinic? Clinic { get; set; }
 
-    public Booking? Booking { get; set; }
 }

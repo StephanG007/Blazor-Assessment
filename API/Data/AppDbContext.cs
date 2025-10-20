@@ -47,14 +47,14 @@ public class AppDbContext(DbContextOptions options) : IdentityDbContext<User>(op
             .OnDelete(DeleteBehavior.Cascade);
 
         builder.Entity<AppointmentSlot>()
-            .HasOne(slot => slot.Booking)
-            .WithOne(booking => booking.AppointmentSlot!)
-            .HasForeignKey<Booking>(booking => booking.AppointmentSlotId)
-            .OnDelete(DeleteBehavior.Cascade);
-
-        builder.Entity<AppointmentSlot>()
             .HasIndex(slot => new { slot.ClinicId, slot.StartTime })
             .IsUnique();
+
+        builder.Entity<Booking>()
+            .HasOne(booking => booking.AppointmentSlot)
+            .WithMany()
+            .HasForeignKey(booking => booking.AppointmentSlotId)
+            .OnDelete(DeleteBehavior.Cascade);
 
         builder.Entity<Booking>()
             .HasIndex(booking => booking.AppointmentSlotId)
