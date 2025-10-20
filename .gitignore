@@ -90,3 +90,7 @@ Icon?
 .Trashes
 *.swp
 *~
+
+API/app.db
+API/app.db-shm
+API/app.db-wal

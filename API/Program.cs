@@ -20,6 +20,7 @@ builder.Services.AddDbContext<AppDbContext>(opt =>
 });
 builder.Services.AddCors();
 builder.Services.AddScoped<ITokenService, TokenService>();
+builder.Services.AddScoped<IBookingService, BookingService>();
 builder.Services.AddIdentityCore<User>(opt =>
 {
   opt.Password.RequiredLength = 6;
@@ -128,6 +129,7 @@ try
   var context = services.GetRequiredService<AppDbContext>();
   var userManager = services.GetRequiredService<UserManager<User>>();
   await context.Database.MigrateAsync();
+  await Seed.SeedClinics(context);
   await Seed.SeedUsers(userManager);
 }
 catch(Exception ex)

@@ -1,4 +1,5 @@
 using API.Controllers.Account.DTOs;
+using API.Controllers.Booking.DTOs;
 using API.Controllers.Users.DTOs;
 using API.Data.Entities;
 using API.Interfaces;
@@ -47,5 +48,17 @@ public static class AppUserExtensions
             Gender = user.Gender,
             ImageUrl = user.ImageUrl,
         };
+    }
+
+    public static BookingDetailsDto ToDto(this Booking booking)
+    {
+        return new BookingDetailsDto(
+            booking.AppointmentSlot.Clinic.Name,
+            booking.AppointmentSlot.StartTime,
+            booking.AppointmentSlot.EndTime,
+            booking.PatientName,
+            booking.PatientEmail,
+            booking.Notes
+        );
     }
 }
