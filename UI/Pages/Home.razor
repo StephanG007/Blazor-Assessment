@@ -162,11 +162,11 @@
                         Your appointment at <b>@_confirmation.ClinicName</b> is scheduled for
                         <b>@_confirmation.StartTime.ToLocalTime().ToString("dddd, dd MMMM yyyy HH:mm")</b>.
                     </MudText>
-                    <MudList Dense="true">
-                        <MudListItem><MudText Typo="Typo.body2"><b>Patient:</b> @_confirmation.PatientName (@_confirmation.PatientEmail)</MudText></MudListItem>
+                    <MudList T="object" Dense="true">
+                        <MudListItem T="object"><MudText Typo="Typo.body2"><b>Patient:</b> @_confirmation.PatientName (@_confirmation.PatientEmail)</MudText></MudListItem>
                         @if (!string.IsNullOrWhiteSpace(_confirmation.Notes))
                         {
-                            <MudListItem><MudText Typo="Typo.body2"><b>Notes:</b> @_confirmation.Notes</MudText></MudListItem>
+                            <MudListItem T="object"><MudText Typo="Typo.body2"><b>Notes:</b> @_confirmation.Notes</MudText></MudListItem>
                         }
                     </MudList>
                 </MudStack>
