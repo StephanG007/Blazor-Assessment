@@ -45,7 +45,7 @@ namespace API.Data.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Address");
+                    b.ToTable("Address", (string)null);
                 });
 
             modelBuilder.Entity("API.Data.Entities.AppointmentSlot", b =>
@@ -71,7 +71,7 @@ namespace API.Data.Migrations
                     b.HasIndex("ClinicId", "StartTime")
                         .IsUnique();
 
-                    b.ToTable("AppointmentSlots");
+                    b.ToTable("AppointmentSlots", (string)null);
                 });
 
             modelBuilder.Entity("API.Data.Entities.Booking", b =>
@@ -110,7 +110,7 @@ namespace API.Data.Migrations
 
                     b.HasIndex("ClinicId");
 
-                    b.ToTable("Bookings");
+                    b.ToTable("Bookings", (string)null);
                 });
 
             modelBuilder.Entity("API.Data.Entities.Clinic", b =>
@@ -135,7 +135,7 @@ namespace API.Data.Migrations
 
                     b.HasIndex("AddressId");
 
-                    b.ToTable("Clinics");
+                    b.ToTable("Clinics", (string)null);
                 });
 
             modelBuilder.Entity("API.Data.Entities.User", b =>

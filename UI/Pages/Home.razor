@@ -4,6 +4,7 @@
 @using Contracts.Account
 @using Contracts.Bookings
 @using Contracts.Clinics
+@using UI.Services
 @inject BookingApiClient BookingApiClient
 @inject AuthState AuthState
 @implements IDisposable
@@ -132,7 +133,7 @@ else
 
 @code {
     private readonly BookingFormModel bookingForm = new();
-    private List<ClinicSummaryResponse>? clinics;
+    private List<ClinicSummaryDto>? clinics;
     private string? clinicsLoadError;
     private bool isLoadingAvailability;
     private string? availabilityError;

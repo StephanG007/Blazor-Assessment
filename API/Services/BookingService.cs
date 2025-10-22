@@ -49,8 +49,7 @@ public class BookingService(AppDbContext dbContext) : IBookingService
         if (slot == null)
             throw new Exception($"Appointment slot with id {request.AppointmentSlotId} was not available.");
 
-        var booking = new Booking
-        {
+        var booking = new Booking {
             AppointmentSlotId = request.AppointmentSlotId,
             AppointmentSlot = slot,
             PatientName = request.PatientName,
@@ -60,16 +59,8 @@ public class BookingService(AppDbContext dbContext) : IBookingService
         };
 
         dbContext.Bookings.Add(booking);
-
-        try
-        {
-            await dbContext.SaveChangesAsync(cancellationToken);
-        }
-        catch (Exception ex)
-        {
-            throw new Exception("Failed to create booking.", ex);
-        }
-
+        await dbContext.SaveChangesAsync(cancellationToken);
+        
         return booking.ToDetailsResponse();
     }
 

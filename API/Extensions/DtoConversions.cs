@@ -2,25 +2,13 @@ using API.Data.Entities;
 using API.Interfaces;
 using Contracts.Account;
 using Contracts.Bookings;
+using Contracts.Clinics;
 using Contracts.Users;
 
 namespace API.Extensions;
 
-public static class AppUserExtensions
+public static class DtoConversions
 {
-    public static UserListResponse ToListResponse(this User user)
-    {
-        return new UserListResponse
-        {
-            Id = user.Id,
-            DisplayName = $"{user.Name} {user.Surname}",
-            Region = user.Region,
-            Country = user.Country,
-            Gender = user.Gender,
-            ImageUrl = user.ImageUrl
-        };
-    }
-
     public static async Task<LoginResponse> ToLoginResponse(this User user, ITokenService tokenService)
     {
         return new LoginResponse
@@ -60,5 +48,15 @@ public static class AppUserExtensions
             booking.PatientEmail,
             booking.Notes
         );
+    }
+
+    public static ClinicSummaryDto ToDto(this Clinic clinic)
+    {
+        return new ClinicSummaryDto(
+            clinic.Id,
+            clinic.Name,
+            clinic.Address?.City,
+            clinic.Address?.Province,
+            clinic.PhoneNumber);
     }
 }

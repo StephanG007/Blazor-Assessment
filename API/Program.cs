@@ -21,6 +21,7 @@ builder.Services.AddDbContext<AppDbContext>(opt =>
 builder.Services.AddCors();
 builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<IBookingService, BookingService>();
+builder.Services.AddScoped<IClinicService, ClinicService>();
 builder.Services.AddIdentityCore<User>(opt =>
 {
   opt.Password.RequiredLength = 6;

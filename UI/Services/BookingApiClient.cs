@@ -7,10 +7,10 @@ namespace UI.Services;
 
 public class BookingApiClient(HttpClient httpClient)
 {
-    public async Task<IReadOnlyList<ClinicSummaryResponse>> GetClinicsAsync(CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<ClinicSummaryDto>> GetClinicsAsync(CancellationToken cancellationToken = default)
     {
-        var clinics = await httpClient.GetFromJsonAsync<IReadOnlyList<ClinicSummaryResponse>>("api/clinics", cancellationToken);
-        return clinics ?? Array.Empty<ClinicSummaryResponse>();
+        var clinics = await httpClient.GetFromJsonAsync<IReadOnlyList<ClinicSummaryDto>>("api/clinics", cancellationToken);
+        return clinics ?? Array.Empty<ClinicSummaryDto>();
     }
 
     public async Task<IReadOnlyList<AvailableSlotResponse>> GetAvailabilityAsync(int clinicId, DateOnly date, CancellationToken cancellationToken = default)

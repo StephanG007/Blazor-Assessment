@@ -42,10 +42,4 @@ public class TokenService(IConfiguration config, UserManager<User> userManager) 
 
         return tokenHandler.WriteToken(token);
     }
-
-    public string GenerateRefreshToken()
-    {
-        var randomBytes = RandomNumberGenerator.GetBytes(64);
-        return Convert.ToBase64String(randomBytes);
-    }
 }

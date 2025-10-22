@@ -1,22 +1,25 @@
 @using System.ComponentModel.DataAnnotations
 @using Contracts.Account
+@using UI.Services
 @inject AuthService AuthService
 @inject AuthState AuthState
 @implements IDisposable
+
+<h2>LOGIN BAR</h2>
 
 <div class="login-bar">
     @if (currentUser is null)
     {
         <EditForm Model="loginModel" OnValidSubmit="HandleLoginAsync">
-            <DataAnnotationsValidator />
+            <DataAnnotationsValidator/>
             <div class="login-fields">
                 <div class="field">
-                    <InputText @bind-Value="loginModel.Email" class="form-control" placeholder="Email" />
-                    <ValidationMessage For="() => loginModel.Email" />
+                    <InputText @bind-Value="loginModel.Email" class="form-control" placeholder="Email"/>
+                    <ValidationMessage For="() => loginModel.Email"/>
                 </div>
                 <div class="field">
-                    <InputText @bind-Value="loginModel.Password" class="form-control" type="password" placeholder="Password" />
-                    <ValidationMessage For="() => loginModel.Password" />
+                    <InputText @bind-Value="loginModel.Password" class="form-control" type="password" placeholder="Password"/>
+                    <ValidationMessage For="() => loginModel.Password"/>
                 </div>
                 <button class="btn btn-primary" type="submit" disabled="@(isBusy)">@(isBusy ? "Signing in..." : "Log in")</button>
             </div>
@@ -31,7 +34,7 @@
         <div class="user-summary">
             @if (!string.IsNullOrWhiteSpace(currentUser.ImageUrl))
             {
-                <img src="@currentUser.ImageUrl" alt="@currentUser.DisplayName" class="avatar" />
+                <img src="@currentUser.ImageUrl" alt="@currentUser.DisplayName" class="avatar"/>
             }
             <span class="display-name">@currentUser.DisplayName</span>
             <button class="btn btn-link" @onclick="HandleLogout" disabled="@(isBusy)">Log out</button>
