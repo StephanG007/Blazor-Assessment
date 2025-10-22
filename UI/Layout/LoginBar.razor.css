@@ -1,0 +1,63 @@
+.login-bar {
+    align-items: center;
+    background-color: #0d6efd;
+    color: #fff;
+    display: flex;
+    justify-content: space-between;
+    padding: 0.5rem 1rem;
+    width: 100%;
+}
+
+.login-bar .login-fields {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.login-bar .field {
+    display: flex;
+    flex-direction: column;
+}
+
+.login-bar .field .validation-message {
+    color: #ffe0e0;
+    font-size: 0.75rem;
+}
+
+.login-bar .form-control {
+    min-width: 14rem;
+}
+
+.login-bar .btn-link {
+    color: #fff;
+    text-decoration: underline;
+}
+
+.login-bar .btn-link:hover,
+.login-bar .btn-link:focus {
+    color: #dbe6ff;
+}
+
+.login-bar .error {
+    display: block;
+    margin-top: 0.25rem;
+    font-size: 0.9rem;
+}
+
+.login-bar .user-summary {
+    align-items: center;
+    display: flex;
+    gap: 0.75rem;
+}
+
+.login-bar .avatar {
+    border-radius: 50%;
+    height: 32px;
+    width: 32px;
+    object-fit: cover;
+}
+
+.login-bar .display-name {
+    font-weight: 600;
+}
+*** End of File
