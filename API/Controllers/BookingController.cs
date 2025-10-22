@@ -31,16 +31,16 @@ public class BookingController(IBookingService bookingService) : ControllerBase
     }
 
     [HttpPost("create")]
-    public async Task<ActionResult<BookingConfirmationResponse>> CreateBooking([FromBody] BookingRequest request, CancellationToken cancellationToken)
+    public async Task<ActionResult<BookingDetailsResponse>> CreateBooking([FromBody] BookingRequest request, CancellationToken cancellationToken)
     {
         if (!ModelState.IsValid)
             return ValidationProblem(ModelState);
 
         try
         {
-            await bookingService.CreateBookingAsync(request, cancellationToken);
+            var confirmation = await bookingService.CreateBookingAsync(request, cancellationToken);
 
-            return Ok();
+            return Ok(confirmation);
         }
         catch (Exception ex)
         {

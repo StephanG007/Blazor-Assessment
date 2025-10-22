@@ -39,14 +39,15 @@ public class BookingService(AppDbContext dbContext) : IBookingService
     public async Task<BookingDetailsResponse> CreateBookingAsync(BookingRequest request, CancellationToken cancellationToken = default)
     {
         var slot = await dbContext.AppointmentSlots
-            .Where(slot => slot.IsActive 
+            .Include(slot => slot.Clinic)
+            .Where(slot => slot.IsActive
                && slot.ClinicId == request.ClinicId
                && slot.Id == request.AppointmentSlotId
                && slot.Booking == null)
             .FirstOrDefaultAsync(cancellationToken);
-        
-        if(slot == null)
-            throw new Exception($" with id {request.AppointmentSlotId} was not available.");   
+
+        if (slot == null)
+            throw new Exception($"Appointment slot with id {request.AppointmentSlotId} was not available.");
 
         var booking = new Booking
         {
