@@ -1,0 +1,301 @@
+@page "/"
+@page "/booking"
+@inject BookingApiClient BookingClient
+@inject ISnackbar Snackbar
+
+<PageTitle>Book an Appointment</PageTitle>
+
+<MudPaper Class="booking-card" Elevation="4">
+    <MudStack Row="false" Spacing="2">
+        <MudText Typo="Typo.h4">Book an Appointment</MudText>
+        <MudText Typo="Typo.subtitle2" Class="mb-4">
+            Choose a clinic, pick a date, and reserve an available time slot.
+        </MudText>
+
+        @if (!string.IsNullOrEmpty(ErrorMessage))
+        {
+            <MudAlert Severity="Severity.Error" OnClose="ClearError">@ErrorMessage</MudAlert>
+        }
+
+        @if (Confirmation is not null)
+        {
+            <MudAlert Severity="Severity.Success" Elevation="0" Dense="true" Class="mb-4">
+                <MudText Typo="Typo.h6">Booking confirmed!</MudText>
+                <MudText>@Confirmation.ClinicName</MudText>
+                <MudText>@($"{Confirmation.StartTime.ToLocalTime():MMM d, yyyy h:mm tt} - {Confirmation.EndTime.ToLocalTime():h:mm tt}")</MudText>
+            </MudAlert>
+        }
+
+        <MudStack Row="true" Spacing="2" Wrap="true">
+            <MudItem xs="12" sm="6">
+                <MudSelect T="int?" Label="Clinic" Value="SelectedClinicId" ValueChanged="OnClinicChanged" ValueExpression="() => SelectedClinicId" Dense="true" Required="true" Disabled="IsLoadingClinics">
+                    @if (IsLoadingClinics)
+                    {
+                        <MudSelectItem Value="@(int?)null">Loading clinics...</MudSelectItem>
+                    }
+                    else if (Clinics.Count == 0)
+                    {
+                        <MudSelectItem Value="@(int?)null">No clinics available</MudSelectItem>
+                    }
+                    else
+                    {
+                        foreach (var clinic in Clinics)
+                        {
+                            <MudSelectItem Value="(int?)clinic.Id">@clinic.Name</MudSelectItem>
+                        }
+                    }
+                </MudSelect>
+            </MudItem>
+            <MudItem xs="12" sm="6">
+                <MudDatePicker @bind-Date="SelectedDate" Label="Appointment date" DisableToolbar="false" Immediate="true" MinDate="@DateTime.Today" Class="w-100" />
+            </MudItem>
+        </MudStack>
+
+        <MudDivider Class="my-4" />
+
+        @if (SelectedClinic is not null)
+        {
+            <MudPaper Variant="Outlined" Class="pa-3">
+                <MudText Typo="Typo.subtitle1">@SelectedClinic.Name</MudText>
+                <MudText Typo="Typo.body2">@SelectedClinic.Address</MudText>
+                <MudText Typo="Typo.body2">@SelectedClinic.PhoneNumber</MudText>
+            </MudPaper>
+
+            <MudDivider Class="my-4" />
+        }
+
+        <MudGrid>
+            <MudItem xs="12" md="6">
+                <MudPaper Variant="Outlined" Class="pa-3 slot-list">
+                    <MudText Typo="Typo.h6" Class="mb-2">Available slots</MudText>
+
+                    @if (IsLoadingSlots)
+                    {
+                        <MudStack AlignItems="Center">
+                            <MudProgressCircular Color="Color.Primary" Indeterminate="true" />
+                        </MudStack>
+                    }
+                    else if (Slots.Count == 0)
+                    {
+                        <MudText>No available slots for the selected day.</MudText>
+                    }
+                    else
+                    {
+                        <MudList Dense="true">
+                            @foreach (var slot in Slots)
+                            {
+                                <MudListItem Activated="SelectedSlot?.Id == slot.Id" OnClick="() => SelectSlot(slot)">
+                                    <MudText>@($"{slot.StartTime.ToLocalTime():h:mm tt} - {slot.EndTime.ToLocalTime():h:mm tt}")</MudText>
+                                </MudListItem>
+                            }
+                        </MudList>
+                    }
+                </MudPaper>
+            </MudItem>
+            <MudItem xs="12" md="6">
+                <MudPaper Variant="Outlined" Class="pa-3">
+                    <MudText Typo="Typo.h6" Class="mb-2">Your details</MudText>
+                    <MudForm @ref="BookingForm">
+                        <MudTextField @bind-Value="Booking.PatientName" Label="Full name" Required="true" Immediate="true" />
+                        <MudTextField @bind-Value="Booking.PatientEmail" Label="Email" Required="true" Immediate="true" Validation="ValidateEmail" />
+                        <MudTextField @bind-Value="Booking.Notes" Label="Notes (optional)" Lines="3" />
+                        <MudButton Variant="Variant.Filled" Color="Color.Primary" Disabled="!CanSubmit" ButtonType="ButtonType.Button" OnClick="SubmitAsync">
+                            Book appointment
+                        </MudButton>
+                    </MudForm>
+                </MudPaper>
+            </MudItem>
+        </MudGrid>
+    </MudStack>
+</MudPaper>
+
+@code {
+    private readonly List<ClinicSummary> Clinics = new();
+    private readonly List<AvailableSlot> Slots = new();
+
+    private MudForm? BookingForm;
+    private BookingRequest Booking { get; } = new();
+    private BookingConfirmation? Confirmation { get; set; }
+    private AvailableSlot? SelectedSlot { get; set; }
+    private ClinicSummary? SelectedClinic => SelectedClinicId is null ? null : Clinics.FirstOrDefault(c => c.Id == SelectedClinicId);
+
+
+    private int? SelectedClinicId
+    {
+        get => Booking.ClinicId;
+        set
+        {
+            if (Booking.ClinicId == value)
+            {
+                return;
+            }
+
+            Booking.ClinicId = value;
+            Confirmation = null;
+
+            Slots.Clear();
+            SelectedSlot = null;
+            Booking.AppointmentSlotId = null;
+        }
+    }
+
+    private DateTime? SelectedDate
+    {
+        get => _selectedDate;
+        set
+        {
+            if (_selectedDate != value)
+            {
+                _selectedDate = value;
+                Confirmation = null;
+                _ = InvokeAsync(RefreshSlotsAsync);
+            }
+        }
+    }
+
+    private DateTime? _selectedDate;
+    private bool IsLoadingClinics { get; set; }
+    private bool IsLoadingSlots { get; set; }
+    private string? ErrorMessage { get; set; }
+
+    private bool CanSubmit =>
+        !IsLoadingSlots &&
+        SelectedSlot is not null &&
+        !string.IsNullOrWhiteSpace(Booking.PatientName) &&
+        !string.IsNullOrWhiteSpace(Booking.PatientEmail);
+
+    protected override async Task OnInitializedAsync()
+    {
+        _selectedDate = DateTime.Today;
+        await LoadClinicsAsync();
+        await RefreshSlotsAsync();
+    }
+
+    private async Task LoadClinicsAsync()
+    {
+        IsLoadingClinics = true;
+        ErrorMessage = null;
+        try
+        {
+            Clinics.Clear();
+            var clinics = await BookingClient.GetClinicsAsync();
+            Clinics.AddRange(clinics);
+            if (Clinics.Count > 0 && SelectedClinicId is null)
+            {
+                SelectedClinicId = Clinics[0].Id;
+            }
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = "Unable to load clinics. " + ex.Message;
+        }
+        finally
+        {
+            IsLoadingClinics = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task RefreshSlotsAsync()
+    {
+        if (SelectedClinicId is null || SelectedDate is null)
+        {
+            Slots.Clear();
+            SelectedSlot = null;
+            Booking.AppointmentSlotId = null;
+            return;
+        }
+
+        IsLoadingSlots = true;
+        ErrorMessage = null;
+        Slots.Clear();
+        SelectedSlot = null;
+        Booking.AppointmentSlotId = null;
+        try
+        {
+            var dateOnly = DateOnly.FromDateTime(SelectedDate.Value.Date);
+            var slots = await BookingClient.GetAvailableSlotsAsync(SelectedClinicId.Value, dateOnly);
+            Slots.AddRange(slots.OrderBy(slot => slot.StartTime));
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = "Unable to load available slots. " + ex.Message;
+        }
+        finally
+        {
+            IsLoadingSlots = false;
+            StateHasChanged();
+        }
+    }
+
+    private void SelectSlot(AvailableSlot slot)
+    {
+        SelectedSlot = slot;
+        Booking.AppointmentSlotId = slot.Id;
+        Confirmation = null;
+    }
+
+    private async Task SubmitAsync()
+    {
+        ErrorMessage = null;
+        Confirmation = null;
+
+        if (BookingForm is not null)
+        {
+            await BookingForm.Validate();
+            if (!BookingForm.IsValid)
+            {
+                return;
+            }
+        }
+
+        if (SelectedSlot is null)
+        {
+            ErrorMessage = "Please select a time slot before booking.";
+            return;
+        }
+
+        try
+        {
+            Confirmation = await BookingClient.CreateBookingAsync(Booking);
+            Snackbar.Add("Your appointment has been booked.", Severity.Success);
+            await RefreshSlotsAsync();
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = ex.Message;
+            Snackbar.Add(ErrorMessage, Severity.Error);
+        }
+    }
+
+    private Task OnClinicChanged(int? clinicId)
+    {
+        ErrorMessage = null;
+        SelectedClinicId = clinicId;
+        return RefreshSlotsAsync();
+    }
+
+    private void ClearError()
+    {
+        ErrorMessage = null;
+        StateHasChanged();
+    }
+
+    private static string? ValidateEmail(string? email)
+    {
+        if (string.IsNullOrWhiteSpace(email))
+        {
+            return "Email is required.";
+        }
+
+        try
+        {
+            var _ = new System.Net.Mail.MailAddress(email);
+            return null;
+        }
+        catch
+        {
+            return "Enter a valid email address.";
+        }
+    }
+}

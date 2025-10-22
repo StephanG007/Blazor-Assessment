@@ -26,7 +26,7 @@ public class Seed
       users[i].DisplayName = users[i].Email!;
       users[i].UserName = users[i].Email;
       // This exists only because I could not figure out how to create a random int when generating the data
-      users[i].ImageUrl = users[i].ImageUrl?.Replace("xyz", i.ToString()); 
+      users[i].ImageUrl = users[i].ImageUrl?.Replace("xyz", i.ToString());
       var result = await userManager.CreateAsync(users[i], "P@ssw0rd");
       if (!result.Succeeded)
       {
@@ -57,5 +57,49 @@ public class Seed
       Console.WriteLine("Admin Created");
 
     await userManager.AddToRolesAsync(adminUser, ["Admin", "User"]);
+  }
+
+  public static async Task SeedClinics(AppDbContext context)
+  {
+    if (await context.Clinics.AnyAsync()) return;
+
+    var clinics = new List<Clinic>
+    {
+      new()
+      {
+        Name = "City Health Clinic",
+        Address = "123 Main Street, Metropolis",
+        PhoneNumber = "+1 555 0100"
+      },
+      new()
+      {
+        Name = "Lakeside Family Practice",
+        Address = "45 Lakeview Road, Smallville",
+        PhoneNumber = "+1 555 0120"
+      }
+    };
+
+    var today = DateOnly.FromDateTime(DateTime.UtcNow.Date);
+
+    foreach (var clinic in clinics)
+    {
+      for (var dayOffset = 0; dayOffset < 7; dayOffset++)
+      {
+        var date = today.AddDays(dayOffset);
+        for (var hour = 9; hour < 17; hour++)
+        {
+          var start = DateTime.SpecifyKind(date.ToDateTime(new TimeOnly(hour, 0)), DateTimeKind.Utc);
+          var end = start.AddMinutes(60);
+          clinic.AppointmentSlots.Add(new AppointmentSlot
+          {
+            StartTime = start,
+            EndTime = end
+          });
+        }
+      }
+    }
+
+    await context.Clinics.AddRangeAsync(clinics);
+    await context.SaveChangesAsync();
   }
 }

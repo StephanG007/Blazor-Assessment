@@ -1,0 +1,19 @@
+html, body {
+    font-family: 'Roboto', sans-serif;
+    margin: 0;
+    height: 100%;
+}
+
+.mud-container {
+    margin-top: 2rem;
+    margin-bottom: 2rem;
+}
+
+.booking-card {
+    padding: 1.5rem;
+}
+
+.slot-list {
+    max-height: 20rem;
+    overflow-y: auto;
+}
