@@ -1,16 +1,16 @@
-using API.Controllers.Account.DTOs;
-using API.Controllers.Booking.DTOs;
-using API.Controllers.Users.DTOs;
 using API.Data.Entities;
 using API.Interfaces;
+using Contracts.Account;
+using Contracts.Bookings;
+using Contracts.Users;
 
 namespace API.Extensions;
 
 public static class AppUserExtensions
 {
-    public static UserListDto ToListDto(this User user)
+    public static UserListResponse ToListResponse(this User user)
     {
-        return new UserListDto
+        return new UserListResponse
         {
             Id = user.Id,
             DisplayName = $"{user.Name} {user.Surname}",
@@ -20,8 +20,8 @@ public static class AppUserExtensions
             ImageUrl = user.ImageUrl
         };
     }
-    
-    public static async Task<LoginResponse> ToLoginDto(this User user, ITokenService tokenService)
+
+    public static async Task<LoginResponse> ToLoginResponse(this User user, ITokenService tokenService)
     {
         return new LoginResponse
         {
@@ -33,9 +33,9 @@ public static class AppUserExtensions
         };
     }
 
-    public static UserProfileDto ToProfileDto(this User user)
+    public static UserProfileResponse ToProfileResponse(this User user)
     {
-        return new UserProfileDto
+        return new UserProfileResponse
         {
             Name = user.Name,
             Surname = user.Surname,
@@ -50,9 +50,9 @@ public static class AppUserExtensions
         };
     }
 
-    public static BookingDetailsDto ToDto(this Booking booking)
+    public static BookingDetailsResponse ToDetailsResponse(this Booking booking)
     {
-        return new BookingDetailsDto(
+        return new BookingDetailsResponse(
             booking.AppointmentSlot.Clinic.Name,
             booking.AppointmentSlot.StartTime,
             booking.AppointmentSlot.EndTime,

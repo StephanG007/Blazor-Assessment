@@ -1,6 +1,6 @@
-namespace API.Controllers.Users.DTOs;
+namespace Contracts.Users;
 
-public class UserListDto
+public class UserListResponse
 {
     public required string Id { get; set; }
 

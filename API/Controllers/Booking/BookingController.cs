@@ -1,9 +1,8 @@
 using System.Text.Json;
-using API.Controllers.Booking.DTOs;
 using API.Interfaces;
+using Contracts.Bookings;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using BookingRequest = API.Controllers.Booking.DTOs.BookingRequest;
 
 namespace API.Controllers.Booking;
 
@@ -14,7 +13,7 @@ namespace API.Controllers.Booking;
 public class BookingController(IBookingService bookingService) : ControllerBase
 {
     [HttpGet("clinics/{clinicId:int}/availability")]
-    public async Task<ActionResult<IEnumerable<AvailableSlotDto>>> GetAvailability(int clinicId, [FromQuery] DateOnly? date, CancellationToken cancellationToken)
+    public async Task<ActionResult<IEnumerable<AvailableSlotResponse>>> GetAvailability(int clinicId, [FromQuery] DateOnly? date, CancellationToken cancellationToken)
     {
         var targetDate = date ?? DateOnly.FromDateTime(DateTime.Now.Date);
 
@@ -51,7 +50,7 @@ public class BookingController(IBookingService bookingService) : ControllerBase
     }
 
     [HttpGet("{id:int}")]
-    public async Task<ActionResult<BookingDetailsDto>> GetBookingById(int id, CancellationToken cancellationToken)
+    public async Task<ActionResult<BookingDetailsResponse>> GetBookingById(int id, CancellationToken cancellationToken)
     {
         try
         {

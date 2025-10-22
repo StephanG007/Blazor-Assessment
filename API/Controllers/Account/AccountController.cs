@@ -1,7 +1,7 @@
-using API.Controllers.Account.DTOs;
 using API.Data.Entities;
 using API.Interfaces;
 using API.Extensions;
+using Contracts.Account;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -20,6 +20,6 @@ public class AccountController(UserManager<User> db, ITokenService tokenService)
 
         if (!result) return Unauthorized("Invalid email or password");
 
-        return await user!.ToLoginDto(tokenService);
+        return await user!.ToLoginResponse(tokenService);
     }
 }

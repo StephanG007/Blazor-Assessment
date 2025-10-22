@@ -1,6 +1,6 @@
-namespace API.Controllers.Users.DTOs;
+namespace Contracts.Users;
 
-public class UserProfileDto
+public class UserProfileResponse
 {
     public required string Name { get; set; }
 
@@ -21,4 +21,4 @@ public class UserProfileDto
     public required int Gender { get; set; }
 
     public string? ImageUrl { get; set; }
-};
+}
