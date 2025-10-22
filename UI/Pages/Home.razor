@@ -11,137 +11,183 @@
 
 <PageTitle>Book an appointment</PageTitle>
 
-<h1>Book an appointment</h1>
-<p class="lead">Choose a clinic, pick a date, and reserve a slot in just a few clicks.</p>
+<MudStack Spacing="2" Class="home-wrapper">
+    <MudText Typo="Typo.h3" Class="page-title">Book an appointment</MudText>
+    <MudText Typo="Typo.subtitle1" Class="page-lead">Choose a clinic, pick a date, and reserve a slot in just a few clicks.</MudText>
 
-@if (clinicsLoadError is not null)
-{
-    <div class="alert alert-danger" role="alert">@clinicsLoadError</div>
-}
-else if (clinics is null)
-{
-    <div class="loading">Loading clinics...</div>
-}
-else if (clinics.Count == 0)
-{
-    <div class="alert alert-info" role="alert">No clinics are currently available for booking.</div>
-}
-else
-{
-    <EditForm Model="bookingForm" OnValidSubmit="SubmitAsync">
-        <DataAnnotationsValidator />
-        <ValidationSummary class="validation-summary" />
-
-        <div class="card booking-card">
-            <div class="card-body">
-                <div class="selection-grid">
-                    <div>
-                        <label class="form-label" for="clinic">Clinic</label>
-                        <InputSelect id="clinic" class="form-select" @bind-Value="bookingForm.ClinicId" @onchange="OnClinicChanged">
-                            <option value="0">Select a clinic</option>
-                            @foreach (var clinic in clinics)
-                            {
-                                <option value="@clinic.Id">@clinic.Name (@clinic.City, @clinic.Province)</option>
-                            }
-                        </InputSelect>
-                    </div>
-                    <div>
-                        <label class="form-label" for="date">Date</label>
-                        <InputDate id="date" class="form-control" @bind-Value="selectedDate" @onchange="OnDateChanged" />
-                    </div>
-                </div>
-
-                <section class="availability">
-                    <h2>Available slots</h2>
-                    @if (!string.IsNullOrEmpty(availabilityError))
-                    {
-                        <div class="alert alert-warning" role="alert">@availabilityError</div>
-                    }
-                    else if (isLoadingAvailability)
-                    {
-                        <div class="loading">Checking availability...</div>
-                    }
-                    else if (availableSlots.Count == 0)
-                    {
-                        <div class="alert alert-info" role="alert">No open slots for the selected date.</div>
-                    }
-                    else
-                    {
-                        <div class="slot-grid">
-                            @foreach (var slot in availableSlots)
-                            {
-                                var isSelected = bookingForm.AppointmentSlotId == slot.Id;
-                                <button type="button" class="slot-button @(isSelected ? "selected" : null)" @onclick="() => SelectSlot(slot.Id)">
-                                    <span>@slot.StartTime.ToLocalTime().ToString("HH:mm") - @slot.EndTime.ToLocalTime().ToString("HH:mm")</span>
-                                </button>
-                            }
-                        </div>
-                        <ValidationMessage For="() => bookingForm.AppointmentSlotId" class="slot-validation" />
-                    }
-                </section>
-
-                <section class="patient-details">
-                    <h2>Patient details</h2>
-                    <div class="form-grid">
-                    <div>
-                        <label class="form-label" for="patient-name">Full name</label>
-                        <InputText id="patient-name" class="form-control" @bind-Value="bookingForm.PatientName" />
-                        <ValidationMessage For="() => bookingForm.PatientName" />
-                    </div>
-                    <div>
-                        <label class="form-label" for="patient-email">Email</label>
-                        <InputText id="patient-email" class="form-control" @bind-Value="bookingForm.PatientEmail" />
-                        <ValidationMessage For="() => bookingForm.PatientEmail" />
-                    </div>
-                </div>
-                <div>
-                    <label class="form-label" for="notes">Notes (optional)</label>
-                        <InputTextArea id="notes" class="form-control" rows="3" @bind-Value="bookingForm.Notes" />
-                    </div>
-                </section>
-
-                @if (!string.IsNullOrEmpty(submissionError))
-                {
-                    <div class="alert alert-danger" role="alert">@submissionError</div>
-                }
-
-                <button class="btn btn-success" type="submit" disabled="@(isSubmitting || bookingForm.AppointmentSlotId is null)">
-                    @(isSubmitting ? "Booking..." : "Book appointment")
-                </button>
-            </div>
-        </div>
-    </EditForm>
-
-    @if (confirmation is not null)
+    @if (_clinicsLoadError is not null)
     {
-        <div class="card confirmation-card">
-            <div class="card-body">
-                <h2>Booking confirmed!</h2>
-                <p>Your appointment at <strong>@confirmation.ClinicName</strong> is scheduled for
-                    <strong>@confirmation.StartTime.ToLocalTime().ToString("dddd, dd MMMM yyyy HH:mm")</strong>.</p>
-                <ul>
-                    <li><strong>Patient:</strong> @confirmation.PatientName (@confirmation.PatientEmail)</li>
-                    @if (!string.IsNullOrWhiteSpace(confirmation.Notes))
-                    {
-                        <li><strong>Notes:</strong> @confirmation.Notes</li>
-                    }
-                </ul>
-            </div>
-        </div>
+        <MudAlert Severity="Severity.Error">@_clinicsLoadError</MudAlert>
     }
-}
+    else if (_clinicSummary is null)
+    {
+        <MudPaper Elevation="0" Class="pa-6 d-flex flex-column align-items-center gap-3">
+            <MudProgressCircular Indeterminate="true" Color="Color.Primary" Size="Size.Large" />
+            <MudText Typo="Typo.subtitle2" Color="Color.Primary">Loading clinics...</MudText>
+        </MudPaper>
+    }
+    else if (_clinicSummary.Clinics.Count == 0)
+    {
+        <MudAlert Severity="Severity.Info">No clinics are currently available for booking.</MudAlert>
+    }
+    else
+    {
+        <EditForm Model="_bookingForm" OnValidSubmit="SubmitAsync">
+            <DataAnnotationsValidator />
+            <MudPaper Elevation="1" Class="pa-6">
+                <MudStack Spacing="3">
+                    <MudGrid Spacing="2">
+                        <MudItem xs="12" md="6">
+                            <MudSelect T="int"
+                                       Label="Clinic"
+                                       Value="_bookingForm.ClinicId"
+                                       ValueChanged="OnClinicChanged"
+                                       ValueExpression="@(() => _bookingForm.ClinicId)"
+                                       Variant="Variant.Outlined"
+                                       Dense="true"
+                                       Required="true">
+                                @foreach (var clinic in _clinicSummary.Clinics)
+                                {
+                                    <MudSelectItem Value="@clinic.Id">@clinic.Name (@clinic.City, @clinic.Province)</MudSelectItem>
+                                }
+                            </MudSelect>
+                        </MudItem>
+                        <MudItem xs="12" md="6">
+                            <MudDatePicker Label="Date"
+                                           Date="SelectedDateTime"
+                                           DateChanged="OnDateChanged"
+                                           MinDate="DateTime.Today"
+                                           PickerVariant="PickerVariant.Inline"
+                                           DisableToolbar="true"
+                                           Variant="Variant.Outlined"
+                                           Dense="true" />
+                        </MudItem>
+                    </MudGrid>
+
+                    <MudDivider />
+
+                    <MudStack Spacing="1">
+                        <MudText Typo="Typo.h6" Class="section-title">Available slots</MudText>
+                        @if (!string.IsNullOrEmpty(_availabilityError))
+                        {
+                            <MudAlert Severity="Severity.Warning">@_availabilityError</MudAlert>
+                        }
+                        else if (_isLoadingAvailability)
+                        {
+                            <MudStack Direction="Row" AlignItems="AlignItems.Center" Spacing="1">
+                                <MudProgressCircular Indeterminate="true" Color="Color.Primary" Size="Size.Medium" />
+                                <MudText Typo="Typo.body2" Color="Color.Primary">Checking availability...</MudText>
+                            </MudStack>
+                        }
+                        else if (_availableSlots.Count == 0)
+                        {
+                            <MudAlert Severity="Severity.Info">No open slots for the selected date.</MudAlert>
+                        }
+                        else
+                        {
+                            <MudGrid Spacing="2">
+                                @foreach (var slot in _availableSlots)
+                                {
+                                    var isSelected = _bookingForm.AppointmentSlotId == slot.Id;
+                                    <MudItem xs="12" sm="6" md="4" lg="3" @key="slot.Id">
+                                        <MudButton Variant="Variant.Filled"
+                                                   Color="@(isSelected ? Color.Secondary : Color.Primary)"
+                                                   FullWidth="true"
+                                                   DisableElevation="true"
+                                                   Disabled="@_isSubmitting"
+                                                   OnClick="() => SelectSlot(slot.Id)">
+                                            <MudText Typo="Typo.body2" Class="slot-time">
+                                                @slot.StartTime.ToLocalTime().ToString("HH:mm") - @slot.EndTime.ToLocalTime().ToString("HH:mm")
+                                            </MudText>
+                                        </MudButton>
+                                    </MudItem>
+                                }
+                            </MudGrid>
+                            <ValidationMessage For="() => _bookingForm.AppointmentSlotId" class="mud-error-text" />
+                        }
+                    </MudStack>
+
+                    <MudDivider />
+
+                    <MudStack Spacing="1">
+                        <MudText Typo="Typo.h6" Class="section-title">Patient details</MudText>
+                        <MudGrid Spacing="2">
+                            <MudItem xs="12" md="6">
+                                <MudTextField @bind-Value="_bookingForm.PatientName"
+                                              For="@(() => _bookingForm.PatientName)"
+                                              Label="Full name"
+                                              Variant="Variant.Outlined"
+                                              Required="true" />
+                            </MudItem>
+                            <MudItem xs="12" md="6">
+                                <MudTextField @bind-Value="_bookingForm.PatientEmail"
+                                              For="@(() => _bookingForm.PatientEmail)"
+                                              Label="Email"
+                                              Variant="Variant.Outlined"
+                                              Required="true" />
+                            </MudItem>
+                            <MudItem xs="12">
+                                <MudTextField @bind-Value="_bookingForm.Notes"
+                                              For="@(() => _bookingForm.Notes)"
+                                              Label="Notes (optional)"
+                                              Variant="Variant.Outlined"
+                                              Lines="3" />
+                            </MudItem>
+                        </MudGrid>
+                    </MudStack>
+
+                    <MudStack Spacing="1" AlignItems="AlignItems.Start">
+                        @if (!string.IsNullOrEmpty(_submissionError))
+                        {
+                            <MudAlert Severity="Severity.Error">@_submissionError</MudAlert>
+                        }
+                        <MudButton ButtonType="ButtonType.Submit"
+                                   Color="Color.Success"
+                                   Variant="Variant.Filled"
+                                   Disabled="@(_isSubmitting || _bookingForm.AppointmentSlotId is null)"
+                                   Loading="@_isSubmitting">
+                            Book appointment
+                        </MudButton>
+                    </MudStack>
+                </MudStack>
+            </MudPaper>
+        </EditForm>
+
+        @if (_confirmation is not null)
+        {
+            <MudPaper Elevation="1" Class="pa-6 confirmation-card">
+                <MudStack Spacing="1">
+                    <MudText Typo="Typo.h5">Booking confirmed!</MudText>
+                    <MudText Typo="Typo.body1">
+                        Your appointment at <b>@_confirmation.ClinicName</b> is scheduled for
+                        <b>@_confirmation.StartTime.ToLocalTime().ToString("dddd, dd MMMM yyyy HH:mm")</b>.
+                    </MudText>
+                    <MudList Dense="true">
+                        <MudListItem><MudText Typo="Typo.body2"><b>Patient:</b> @_confirmation.PatientName (@_confirmation.PatientEmail)</MudText></MudListItem>
+                        @if (!string.IsNullOrWhiteSpace(_confirmation.Notes))
+                        {
+                            <MudListItem><MudText Typo="Typo.body2"><b>Notes:</b> @_confirmation.Notes</MudText></MudListItem>
+                        }
+                    </MudList>
+                </MudStack>
+            </MudPaper>
+        }
+    }
+</MudStack>
 
 @code {
-    private readonly BookingFormModel bookingForm = new();
-    private List<ClinicSummaryDto>? clinics;
-    private string? clinicsLoadError;
-    private bool isLoadingAvailability;
-    private string? availabilityError;
-    private List<AvailableSlotResponse> availableSlots = new();
-    private DateOnly selectedDate = DateOnly.FromDateTime(DateTime.Today);
-    private bool isSubmitting;
-    private string? submissionError;
-    private BookingDetailsResponse? confirmation;
+    private readonly BookingFormModel _bookingForm = new();
+    private ClinicSummaryResponse? _clinicSummary;
+    private string? _clinicsLoadError;
+    private bool _isLoadingAvailability;
+    private string? _availabilityError;
+    private List<AvailableSlotResponse> _availableSlots = new();
+    private DateOnly _selectedDate = DateOnly.FromDateTime(DateTime.Today);
+    private bool _isSubmitting;
+    private string? _submissionError;
+    private BookingDetailsResponse? _confirmation;
+
+    private DateTime SelectedDateTime => _selectedDate.ToDateTime(TimeOnly.MinValue);
 
     protected override async Task OnInitializedAsync()
     {
@@ -152,129 +198,148 @@ else
 
     private async Task LoadClinicsAsync()
     {
-        clinicsLoadError = null;
+        _clinicsLoadError = null;
 
         try
         {
-            clinics = (await BookingApiClient.GetClinicsAsync()).ToList();
-            if (clinics.Count > 0 && bookingForm.ClinicId == 0)
-            {
-                bookingForm.ClinicId = clinics[0].Id;
-            }
+            _clinicSummary = await BookingApiClient.GetClinicsAsync();
+            if (_clinicSummary?.Clinics.Count > 0 && _bookingForm.ClinicId == 0)
+                _bookingForm.ClinicId = _clinicSummary.Clinics[0].Id;
+            
             await LoadAvailabilityAsync();
         }
         catch (Exception)
         {
-            clinicsLoadError = "We couldn't load clinics at the moment. Please try again later.";
+            _clinicsLoadError = "We couldn't load clinics at the moment. Please try again later.";
         }
     }
 
     private async Task LoadAvailabilityAsync()
     {
-        availabilityError = null;
-        confirmation = null;
-        availableSlots.Clear();
+        _availabilityError = null;
+        _confirmation = null;
+        _availableSlots.Clear();
 
-        if (bookingForm.ClinicId == 0)
+        if (_bookingForm.ClinicId == 0)
         {
             return;
         }
 
-        isLoadingAvailability = true;
+        _isLoadingAvailability = true;
 
         try
         {
-            var slots = await BookingApiClient.GetAvailabilityAsync(bookingForm.ClinicId, selectedDate);
-            availableSlots = slots.ToList();
-            if (!availableSlots.Any())
+            var slots = await BookingApiClient.GetAvailabilityAsync(_bookingForm.ClinicId, _selectedDate);
+            _availableSlots = slots.ToList();
+            if (!_availableSlots.Any())
             {
-                bookingForm.AppointmentSlotId = null;
+                _bookingForm.AppointmentSlotId = null;
             }
         }
         catch (HttpRequestException ex) when (ex.StatusCode == HttpStatusCode.Unauthorized || ex.StatusCode == HttpStatusCode.Forbidden)
         {
-            availabilityError = "Please log in to view the clinic availability.";
-            bookingForm.AppointmentSlotId = null;
+            _availabilityError = "Please log in to view the clinic availability.";
+            _bookingForm.AppointmentSlotId = null;
         }
         catch (Exception)
         {
-            availabilityError = "We couldn't retrieve availability. Please try again.";
-            bookingForm.AppointmentSlotId = null;
+            _availabilityError = "We couldn't retrieve availability. Please try again.";
+            _bookingForm.AppointmentSlotId = null;
         }
         finally
         {
-            isLoadingAvailability = false;
+            _isLoadingAvailability = false;
         }
+    }
+
+    private async Task OnClinicChanged(int clinicId)
+    {
+        if (_bookingForm.ClinicId == clinicId)
+        {
+            return;
+        }
+
+        _bookingForm.ClinicId = clinicId;
+        _bookingForm.AppointmentSlotId = null;
+        await LoadAvailabilityAsync();
+    }
+
+    private async Task OnDateChanged(DateTime? date)
+    {
+        if (date is null)
+        {
+            return;
+        }
+
+        var newDate = DateOnly.FromDateTime(date.Value);
+        if (newDate == _selectedDate)
+        {
+            return;
+        }
+
+        _selectedDate = newDate;
+        _bookingForm.AppointmentSlotId = null;
+        await LoadAvailabilityAsync();
     }
 
     private void SelectSlot(int slotId)
     {
-        bookingForm.AppointmentSlotId = slotId;
-        submissionError = null;
+        _bookingForm.AppointmentSlotId = slotId;
+        _submissionError = null;
     }
 
     private async Task SubmitAsync()
     {
-        submissionError = null;
-        confirmation = null;
+        _submissionError = null;
+        _confirmation = null;
 
-        if (bookingForm.AppointmentSlotId is null)
+        if (_bookingForm.AppointmentSlotId is null)
         {
-            submissionError = "Please select an available slot.";
+            _submissionError = "Please select an available slot.";
             return;
         }
 
-        isSubmitting = true;
+        _isSubmitting = true;
 
         try
         {
             var request = new BookingRequest
             {
-                ClinicId = bookingForm.ClinicId,
-                AppointmentSlotId = bookingForm.AppointmentSlotId.Value,
-                PatientName = bookingForm.PatientName,
-                PatientEmail = bookingForm.PatientEmail,
-                Notes = string.IsNullOrWhiteSpace(bookingForm.Notes) ? null : bookingForm.Notes
+                ClinicId = _bookingForm.ClinicId,
+                AppointmentSlotId = _bookingForm.AppointmentSlotId.Value,
+                PatientName = _bookingForm.PatientName,
+                PatientEmail = _bookingForm.PatientEmail,
+                Notes = string.IsNullOrWhiteSpace(_bookingForm.Notes) ? null : _bookingForm.Notes
             };
 
-            confirmation = await BookingApiClient.CreateBookingAsync(request);
-            availableSlots = availableSlots.Where(slot => slot.Id != request.AppointmentSlotId).ToList();
-            bookingForm.AppointmentSlotId = null;
+            _confirmation = await BookingApiClient.CreateBookingAsync(request);
+            _availableSlots = _availableSlots.Where(slot => slot.Id != request.AppointmentSlotId).ToList();
+            _bookingForm.AppointmentSlotId = null;
         }
         catch (HttpRequestException ex) when (ex.StatusCode == HttpStatusCode.Unauthorized || ex.StatusCode == HttpStatusCode.Forbidden)
         {
-            submissionError = "You need to be logged in to complete a booking.";
+            _submissionError = "You need to be logged in to complete a booking.";
         }
         catch (Exception)
         {
-            submissionError = "We couldn't save the booking. Please try again.";
+            _submissionError = "We couldn't save the booking. Please try again.";
         }
         finally
         {
-            isSubmitting = false;
+            _isSubmitting = false;
         }
     }
 
-    private Task OnClinicChanged(ChangeEventArgs _)
+    private async Task OnAuthStateChangedAsync()
     {
-        bookingForm.AppointmentSlotId = null;
-        return LoadAvailabilityAsync();
-    }
-
-    private Task OnDateChanged(ChangeEventArgs _)
-    {
-        bookingForm.AppointmentSlotId = null;
-        return LoadAvailabilityAsync();
+        ApplyUserDetails(AuthState.CurrentUser);
+        await LoadAvailabilityAsync();
+        StateHasChanged();
     }
 
     private void OnAuthStateChanged()
     {
-        ApplyUserDetails(AuthState.CurrentUser);
-        _ = InvokeAsync(async () =>
-        {
-            await LoadAvailabilityAsync();
-            StateHasChanged();
-        });
+        _ = InvokeAsync(OnAuthStateChangedAsync);
     }
 
     private void ApplyUserDetails(LoginResponse? user)
@@ -284,10 +349,10 @@ else
             return;
         }
 
-        bookingForm.PatientEmail = user.Email;
-        if (string.IsNullOrWhiteSpace(bookingForm.PatientName))
+        _bookingForm.PatientEmail = user.Email;
+        if (string.IsNullOrWhiteSpace(_bookingForm.PatientName))
         {
-            bookingForm.PatientName = user.DisplayName;
+            _bookingForm.PatientName = user.DisplayName;
         }
     }
 

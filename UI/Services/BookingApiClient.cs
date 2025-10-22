@@ -7,10 +7,10 @@ namespace UI.Services;
 
 public class BookingApiClient(HttpClient httpClient)
 {
-    public async Task<IReadOnlyList<ClinicSummaryDto>> GetClinicsAsync(CancellationToken cancellationToken = default)
+    public async Task<ClinicSummaryResponse?> GetClinicsAsync(CancellationToken cancellationToken = default)
     {
-        var clinics = await httpClient.GetFromJsonAsync<IReadOnlyList<ClinicSummaryDto>>("api/clinics", cancellationToken);
-        return clinics ?? Array.Empty<ClinicSummaryDto>();
+        var clinicSummary = await httpClient.GetFromJsonAsync<ClinicSummaryResponse>("api/clinics", cancellationToken);
+        return clinicSummary;
     }
 
     public async Task<IReadOnlyList<AvailableSlotResponse>> GetAvailabilityAsync(int clinicId, DateOnly date, CancellationToken cancellationToken = default)
@@ -20,7 +20,7 @@ public class BookingApiClient(HttpClient httpClient)
         response.EnsureSuccessStatusCode();
 
         var slots = await response.Content.ReadFromJsonAsync<IReadOnlyList<AvailableSlotResponse>>(cancellationToken: cancellationToken);
-        return slots ?? Array.Empty<AvailableSlotResponse>();
+        return slots ?? [];
     }
 
     public async Task<BookingDetailsResponse> CreateBookingAsync(BookingRequest request, CancellationToken cancellationToken = default)

@@ -5,44 +5,66 @@
 @inject AuthState AuthState
 @implements IDisposable
 
-<h2>LOGIN BAR</h2>
-
-<div class="login-bar">
+<MudStack Direction="Row" AlignItems="AlignItems.Center" JustifyContent="Flex-end" Spacing="1" Class="login-bar">
     @if (currentUser is null)
     {
-        <EditForm Model="loginModel" OnValidSubmit="HandleLoginAsync">
-            <DataAnnotationsValidator/>
-            <div class="login-fields">
-                <div class="field">
-                    <InputText @bind-Value="loginModel.Email" class="form-control" placeholder="Email"/>
-                    <ValidationMessage For="() => loginModel.Email"/>
-                </div>
-                <div class="field">
-                    <InputText @bind-Value="loginModel.Password" class="form-control" type="password" placeholder="Password"/>
-                    <ValidationMessage For="() => loginModel.Password"/>
-                </div>
-                <button class="btn btn-primary" type="submit" disabled="@(isBusy)">@(isBusy ? "Signing in..." : "Log in")</button>
-            </div>
+        <MudForm @ref="_form" Model="loginModel" OnValidSubmit="HandleLoginAsync" Class="login-form">
+            <MudStack Direction="Row" AlignItems="AlignItems.Center" Spacing="1">
+                <MudTextField @bind-Value="loginModel.Email"
+                              For="@(() => loginModel.Email)"
+                              Placeholder="Email"
+                              Variant="Variant.Outlined"
+                              Dense="true"
+                              Adornment="Adornment.Start"
+                              AdornmentIcon="@Icons.Material.Filled.Email"
+                              Immediate="true"
+                              Disabled="@isBusy" />
+                <MudTextField @bind-Value="loginModel.Password"
+                              For="@(() => loginModel.Password)"
+                              Placeholder="Password"
+                              Variant="Variant.Outlined"
+                              Dense="true"
+                              InputType="InputType.Password"
+                              Adornment="Adornment.Start"
+                              AdornmentIcon="@Icons.Material.Filled.Lock"
+                              Immediate="true"
+                              Disabled="@isBusy" />
+                <MudButton Type="ButtonType.Submit"
+                           Variant="Variant.Filled"
+                           Color="Color.Primary"
+                           Loading="@isBusy"
+                           Disabled="@isBusy">
+                    Log in
+                </MudButton>
+            </MudStack>
             @if (!string.IsNullOrWhiteSpace(errorMessage))
             {
-                <span class="error">@errorMessage</span>
+                <MudText Typo="Typo.caption" Color="Color.Error" Class="login-error">@errorMessage</MudText>
             }
-        </EditForm>
+        </MudForm>
     }
     else
     {
-        <div class="user-summary">
-            @if (!string.IsNullOrWhiteSpace(currentUser.ImageUrl))
-            {
-                <img src="@currentUser.ImageUrl" alt="@currentUser.DisplayName" class="avatar"/>
-            }
-            <span class="display-name">@currentUser.DisplayName</span>
-            <button class="btn btn-link" @onclick="HandleLogout" disabled="@(isBusy)">Log out</button>
-        </div>
+        <MudStack Direction="Row" AlignItems="AlignItems.Center" Spacing="1" Class="user-summary">
+            <MudAvatar Size="Size.Medium"
+                       Image="@currentUser.ImageUrl"
+                       Color="Color.Secondary"
+                       Class="user-avatar">
+                @GetInitial(currentUser.DisplayName)
+            </MudAvatar>
+            <MudText Typo="Typo.subtitle2" Class="user-name">@currentUser.DisplayName</MudText>
+            <MudButton Variant="Variant.Text"
+                       Color="Color.Primary"
+                       OnClick="HandleLogout"
+                       Disabled="@isBusy">
+                Log out
+            </MudButton>
+        </MudStack>
     }
-</div>
+</MudStack>
 
 @code {
+    private MudForm? _form;
     private LoginViewModel loginModel = new();
     private bool isBusy;
     private string? errorMessage;
@@ -70,6 +92,7 @@
             else
             {
                 loginModel = new LoginViewModel();
+                await (_form?.ResetAsync() ?? Task.CompletedTask);
             }
         }
         catch
@@ -99,6 +122,17 @@
     public void Dispose()
     {
         AuthState.StateChanged -= HandleAuthStateChanged;
+    }
+
+    private static string GetInitial(string? name)
+    {
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            return "?";
+        }
+
+        var trimmed = name.Trim();
+        return trimmed[..1].ToUpperInvariant();
     }
 
     private sealed class LoginViewModel
