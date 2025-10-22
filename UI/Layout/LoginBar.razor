@@ -1,0 +1,110 @@
+@using System.ComponentModel.DataAnnotations
+@using Contracts.Account
+@inject AuthService AuthService
+@inject AuthState AuthState
+@implements IDisposable
+
+<div class="login-bar">
+    @if (currentUser is null)
+    {
+        <EditForm Model="loginModel" OnValidSubmit="HandleLoginAsync">
+            <DataAnnotationsValidator />
+            <div class="login-fields">
+                <div class="field">
+                    <InputText @bind-Value="loginModel.Email" class="form-control" placeholder="Email" />
+                    <ValidationMessage For="() => loginModel.Email" />
+                </div>
+                <div class="field">
+                    <InputText @bind-Value="loginModel.Password" class="form-control" type="password" placeholder="Password" />
+                    <ValidationMessage For="() => loginModel.Password" />
+                </div>
+                <button class="btn btn-primary" type="submit" disabled="@(isBusy)">@(isBusy ? "Signing in..." : "Log in")</button>
+            </div>
+            @if (!string.IsNullOrWhiteSpace(errorMessage))
+            {
+                <span class="error">@errorMessage</span>
+            }
+        </EditForm>
+    }
+    else
+    {
+        <div class="user-summary">
+            @if (!string.IsNullOrWhiteSpace(currentUser.ImageUrl))
+            {
+                <img src="@currentUser.ImageUrl" alt="@currentUser.DisplayName" class="avatar" />
+            }
+            <span class="display-name">@currentUser.DisplayName</span>
+            <button class="btn btn-link" @onclick="HandleLogout" disabled="@(isBusy)">Log out</button>
+        </div>
+    }
+</div>
+
+@code {
+    private LoginViewModel loginModel = new();
+    private bool isBusy;
+    private string? errorMessage;
+    private LoginResponse? currentUser;
+
+    protected override void OnInitialized()
+    {
+        currentUser = AuthState.CurrentUser;
+        AuthState.StateChanged += HandleAuthStateChanged;
+    }
+
+    private async Task HandleLoginAsync()
+    {
+        errorMessage = null;
+        isBusy = true;
+
+        try
+        {
+            var (success, error) = await AuthService.LoginAsync(loginModel.Email, loginModel.Password);
+
+            if (!success)
+            {
+                errorMessage = error;
+            }
+            else
+            {
+                loginModel = new LoginViewModel();
+            }
+        }
+        catch
+        {
+            errorMessage = "We couldn't reach the server. Please try again.";
+        }
+        finally
+        {
+            isBusy = false;
+        }
+    }
+
+    private void HandleLogout()
+    {
+        errorMessage = null;
+        isBusy = true;
+        AuthService.Logout();
+        isBusy = false;
+    }
+
+    private void HandleAuthStateChanged()
+    {
+        currentUser = AuthState.CurrentUser;
+        InvokeAsync(StateHasChanged);
+    }
+
+    public void Dispose()
+    {
+        AuthState.StateChanged -= HandleAuthStateChanged;
+    }
+
+    private sealed class LoginViewModel
+    {
+        [Required]
+        [EmailAddress]
+        public string Email { get; set; } = string.Empty;
+
+        [Required]
+        public string Password { get; set; } = string.Empty;
+    }
+}
