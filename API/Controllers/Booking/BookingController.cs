@@ -1,10 +1,8 @@
 using System.Text.Json;
 using API.Controllers.Booking.DTOs;
 using API.Interfaces;
-using Bogus.DataSets;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore.Storage.Json;
 using BookingRequest = API.Controllers.Booking.DTOs.BookingRequest;
 
 namespace API.Controllers.Booking;
