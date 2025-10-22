@@ -1,0 +1,146 @@
+@using System.ComponentModel.DataAnnotations
+@using Contracts.Account
+@inject AuthService AuthService
+@inject AuthState AuthState
+@implements IDisposable
+
+<MudStack Direction="Row" AlignItems="Center" JustifyContent="Flex-end" Spacing="1" Class="login-bar">
+    @if (currentUser is null)
+    {
+        <MudForm @ref="_form" Model="loginModel" OnValidSubmit="HandleLoginAsync" Class="login-form">
+            <MudStack Direction="Row" AlignItems="Center" Spacing="1">
+                <MudTextField @bind-Value="loginModel.Email"
+                              For="@(() => loginModel.Email)"
+                              Placeholder="Email"
+                              Variant="Variant.Outlined"
+                              Dense="true"
+                              Adornment="Adornment.Start"
+                              AdornmentIcon="@Icons.Material.Filled.Email"
+                              Immediate="true"
+                              Disabled="@isBusy" />
+                <MudTextField @bind-Value="loginModel.Password"
+                              For="@(() => loginModel.Password)"
+                              Placeholder="Password"
+                              Variant="Variant.Outlined"
+                              Dense="true"
+                              InputType="InputType.Password"
+                              Adornment="Adornment.Start"
+                              AdornmentIcon="@Icons.Material.Filled.Lock"
+                              Immediate="true"
+                              Disabled="@isBusy" />
+                <MudButton Type="ButtonType.Submit"
+                           Variant="Variant.Filled"
+                           Color="Color.Primary"
+                           Loading="@isBusy"
+                           Disabled="@isBusy">
+                    Log in
+                </MudButton>
+            </MudStack>
+            @if (!string.IsNullOrWhiteSpace(errorMessage))
+            {
+                <MudText Typo="Typo.caption" Color="Color.Error" Class="login-error">@errorMessage</MudText>
+            }
+        </MudForm>
+    }
+    else
+    {
+        <MudStack Direction="Row" AlignItems="Center" Spacing="1" Class="user-summary">
+            <MudAvatar Size="Size.Medium"
+                       Image="@currentUser.ImageUrl"
+                       Color="Color.Secondary"
+                       Class="user-avatar">
+                @GetInitial(currentUser.DisplayName)
+            </MudAvatar>
+            <MudText Typo="Typo.subtitle2" Class="user-name">@currentUser.DisplayName</MudText>
+            <MudButton Variant="Variant.Text"
+                       Color="Color.Primary"
+                       OnClick="HandleLogout"
+                       Disabled="@isBusy">
+                Log out
+            </MudButton>
+        </MudStack>
+    }
+</MudStack>
+
+@code {
+    private MudForm? _form;
+    private LoginViewModel loginModel = new();
+    private bool isBusy;
+    private string? errorMessage;
+    private LoginResponse? currentUser;
+
+    protected override void OnInitialized()
+    {
+        currentUser = AuthState.CurrentUser;
+        AuthState.StateChanged += HandleAuthStateChanged;
+    }
+
+    private async Task HandleLoginAsync()
+    {
+        errorMessage = null;
+        isBusy = true;
+
+        try
+        {
+            var (success, error) = await AuthService.LoginAsync(loginModel.Email, loginModel.Password);
+
+            if (!success)
+            {
+                errorMessage = error;
+            }
+            else
+            {
+                loginModel = new LoginViewModel();
+                await (_form?.ResetAsync() ?? Task.CompletedTask);
+            }
+        }
+        catch
+        {
+            errorMessage = "We couldn't reach the server. Please try again.";
+        }
+        finally
+        {
+            isBusy = false;
+        }
+    }
+
+    private void HandleLogout()
+    {
+        errorMessage = null;
+        isBusy = true;
+        AuthService.Logout();
+        isBusy = false;
+    }
+
+    private void HandleAuthStateChanged()
+    {
+        currentUser = AuthState.CurrentUser;
+        InvokeAsync(StateHasChanged);
+    }
+
+    public void Dispose()
+    {
+        AuthState.StateChanged -= HandleAuthStateChanged;
+    }
+
+    private static string GetInitial(string? name)
+    {
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            return "?";
+        }
+
+        var trimmed = name.Trim();
+        return trimmed[..1].ToUpperInvariant();
+    }
+
+    private sealed class LoginViewModel
+    {
+        [Required]
+        [EmailAddress]
+        public string Email { get; set; } = string.Empty;
+
+        [Required]
+        public string Password { get; set; } = string.Empty;
+    }
+}

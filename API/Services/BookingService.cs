@@ -1,15 +1,15 @@
-using API.Controllers.Booking.DTOs;
 using API.Data;
 using API.Data.Entities;
 using API.Extensions;
 using API.Interfaces;
+using Contracts.Bookings;
 using Microsoft.EntityFrameworkCore;
 
 namespace API.Services;
 
 public class BookingService(AppDbContext dbContext) : IBookingService
 {
-    public async Task<IReadOnlyList<AvailableSlotDto>> GetAvailableSlotsAsync(int clinicId, DateOnly date, CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<AvailableSlotResponse>> GetAvailableSlotsAsync(int clinicId, DateOnly date, CancellationToken cancellationToken = default)
     {
         var clinicExists = await dbContext.Clinics
             .AsNoTracking()
@@ -30,23 +30,24 @@ public class BookingService(AppDbContext dbContext) : IBookingService
                 && slot.StartTime >= dayStart
                 && slot.StartTime < dayEnd)
             .OrderBy(slot => slot.StartTime)
-            .Select(slot => new AvailableSlotDto (slot.Id, slot.StartTime, slot.EndTime))
+            .Select(slot => new AvailableSlotResponse (slot.Id, slot.StartTime, slot.EndTime))
             .ToListAsync(cancellationToken);
 
         return availableSlots;
     }
 
-    public async Task<BookingDetailsDto> CreateBookingAsync(BookingRequest request, CancellationToken cancellationToken = default)
+    public async Task<BookingDetailsResponse> CreateBookingAsync(BookingRequest request, CancellationToken cancellationToken = default)
     {
         var slot = await dbContext.AppointmentSlots
-            .Where(slot => slot.IsActive 
+            .Include(slot => slot.Clinic)
+            .Where(slot => slot.IsActive
                && slot.ClinicId == request.ClinicId
                && slot.Id == request.AppointmentSlotId
                && slot.Booking == null)
             .FirstOrDefaultAsync(cancellationToken);
-        
-        if(slot == null)
-            throw new Exception($" with id {request.AppointmentSlotId} was not available.");   
+
+        if (slot == null)
+            throw new Exception($"Appointment slot with id {request.AppointmentSlotId} was not available.");
 
         var booking = new Booking
         {
@@ -69,17 +70,17 @@ public class BookingService(AppDbContext dbContext) : IBookingService
             throw new Exception("Failed to create booking.", ex);
         }
 
-        return booking.ToDto();
+        return booking.ToDetailsResponse();
     }
 
-    public async Task<BookingDetailsDto?> GetBookingByIdAsync(int bookingId, CancellationToken cancellationToken = default)
+    public async Task<BookingDetailsResponse?> GetBookingByIdAsync(int bookingId, CancellationToken cancellationToken = default)
     {
         return await dbContext.Bookings
             .AsNoTracking()
             .Where(b => b.Id == bookingId)
             .Include(b => b.AppointmentSlot)
                 .ThenInclude(a => a.Clinic)
-            .Select(b => b.ToDto())
+            .Select(b => b.ToDetailsResponse())
             .FirstOrDefaultAsync(cancellationToken);
     }
 }

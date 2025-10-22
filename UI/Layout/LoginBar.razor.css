@@ -1,0 +1,35 @@
+.login-bar {
+    width: 100%;
+}
+
+.login-form {
+    width: 100%;
+}
+
+.login-form ::deep .mud-input-root {
+    min-width: 180px;
+}
+
+.login-form ::deep .mud-input-root:not(:first-child) {
+    margin-left: 0.5rem;
+}
+
+.login-form ::deep .mud-button-root {
+    margin-left: 0.75rem;
+}
+
+.login-error {
+    margin-left: 0.5rem;
+}
+
+.user-summary {
+    gap: 0.75rem;
+}
+
+.user-avatar {
+    font-weight: 600;
+}
+
+.user-name {
+    font-weight: 600;
+}

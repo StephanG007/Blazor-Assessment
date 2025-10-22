@@ -1,0 +1,29 @@
+.home-wrapper {
+    gap: 1.5rem;
+}
+
+.page-title {
+    font-weight: 600;
+}
+
+.page-lead {
+    color: rgba(0, 0, 0, 0.6);
+    max-width: 640px;
+}
+
+.section-title {
+    font-weight: 600;
+}
+
+.slot-time {
+    width: 100%;
+    text-align: center;
+}
+
+.confirmation-card {
+    margin-top: 1.5rem;
+}
+
+.confirmation-card ::deep .mud-list-item {
+    padding-left: 0;
+}

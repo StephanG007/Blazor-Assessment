@@ -1,16 +1,62 @@
-﻿@inherits LayoutComponentBase
-<div class="page">
-    <div class="sidebar">
-        <NavMenu />
-    </div>
+@inherits LayoutComponentBase
 
-    <main>
-        <div class="top-row px-4">
-            <a href="https://learn.microsoft.com/aspnet/core/" target="_blank">About</a>
-        </div>
+<MudThemeProvider Theme="@_theme">
+    <MudSnackbarProvider PreventDuplicates="true">
+        <MudLayout>
+            <MudDrawer @bind-Open="_drawerOpen"
+                       Variant="DrawerVariant.Responsive"
+                       Elevation="1"
+                       Color="Color.Primary"
+                       Class="layout-drawer">
+                <MudDrawerHeader>
+                    <MudText Typo="Typo.h5" Class="drawer-title">Clinic Booking</MudText>
+                    <MudText Typo="Typo.subtitle2" Class="drawer-subtitle">Plan your next visit</MudText>
+                </MudDrawerHeader>
+                <NavMenu />
+            </MudDrawer>
 
-        <article class="content px-4">
-            @Body
-        </article>
-    </main>
-</div>
+            <MudMainContent>
+                <MudAppBar Elevation="1" Color="Color.Surface" Dense="true" Class="layout-appbar">
+                    <MudIconButton Icon="@Icons.Material.Filled.Menu"
+                                   Color="Color.Inherit"
+                                   Edge="Edge.Start"
+                                   OnClick="ToggleDrawer"
+                                   Class="d-lg-none" />
+                    <MudText Typo="Typo.h6" Class="appbar-title d-none d-md-block">Clinic Booking Portal</MudText>
+                    <MudSpacer />
+                    <LoginBar />
+                </MudAppBar>
+
+                <MudContainer MaxWidth="MaxWidth.Large" Class="layout-container">
+                    @Body
+                </MudContainer>
+            </MudMainContent>
+        </MudLayout>
+    </MudSnackbarProvider>
+</MudThemeProvider>
+
+@code {
+    private bool _drawerOpen = true;
+
+    private readonly MudTheme _theme = new()
+    {
+        PaletteLight = new PaletteLight
+        {
+            Primary = Colors.Blue.Darken3,
+            Secondary = Colors.DeepPurple.Accent2,
+            Background = Colors.Grey.Lighten5,
+            Surface = Colors.Shades.White,
+            AppbarBackground = Colors.Shades.White,
+            AppbarText = Colors.Grey.Darken4
+        },
+        LayoutProperties = new LayoutProperties
+        {
+            DefaultBorderRadius = "10px"
+        }
+    };
+
+    private void ToggleDrawer()
+    {
+        _drawerOpen = !_drawerOpen;
+    }
+}

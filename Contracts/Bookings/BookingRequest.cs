@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace API.Controllers.Booking.DTOs;
+namespace Contracts.Bookings;
 
 public class BookingRequest
 {

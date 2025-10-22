@@ -1,6 +1,6 @@
-namespace API.Controllers.Booking.DTOs;
+namespace Contracts.Bookings;
 
-public record BookingConfirmationDto(
+public record BookingConfirmationResponse(
     int Id,
     int ClinicId,
     string ClinicName,
