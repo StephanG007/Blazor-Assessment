@@ -47,7 +47,7 @@ public class BookingService(AppDbContext db) : IBookingService
             
 
         if (slot == null)
-            throw new Exception($"Appointment slot with id {request.AppointmentSlotId} was not available.");
+            throw new InvalidOperationException($"Appointment slot with id {request.AppointmentSlotId} was not available.");
 
         var booking = new Booking {
             AppointmentSlotId = request.AppointmentSlotId,

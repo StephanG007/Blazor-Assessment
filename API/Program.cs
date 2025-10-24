@@ -66,6 +66,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 
 builder.Services.AddAuthorizationBuilder()
     .AddPolicy("RequireAdminRole", policy => policy.RequireRole("Admin"))
+    .AddPolicy("BookingsAccess", policy => policy.RequireRole("Admin", "User"))
     .AddPolicy("ModeratePhotoRole", policy => policy.RequireRole("Admin", "User"));
 
 builder.Services.AddEndpointsApiExplorer();
