@@ -1,7 +1,5 @@
 @inherits LayoutComponentBase
 
-<MudThemeProvider Theme="@_theme" />
-
 <MudSnackbarProvider PreventDuplicates="true">
     <MudLayout>
         <MudDrawer @bind-Open="_drawerOpen"
@@ -37,23 +35,6 @@
 
 @code {
     private bool _drawerOpen = true;
-
-    private readonly MudTheme _theme = new()
-    {
-        PaletteLight = new PaletteLight
-        {
-            Primary = Colors.Blue.Darken3,
-            Secondary = Colors.DeepPurple.Accent2,
-            Background = Colors.Gray.Lighten5,
-            Surface = Colors.Shades.White,
-            AppbarBackground = Colors.Shades.White,
-            AppbarText = Colors.Gray.Darken4
-        },
-        LayoutProperties = new LayoutProperties
-        {
-            DefaultBorderRadius = "10px"
-        }
-    };
 
     private void ToggleDrawer()
     {
