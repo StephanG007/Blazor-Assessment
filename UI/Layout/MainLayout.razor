@@ -1,21 +1,33 @@
 @using UI.Theming
 @inherits LayoutComponentBase
 
-<MudThemeProvider Theme="@AppTheme.LightTheme" />
-<MudSnackbarProvider PreventDuplicates="true">
-    <MudLayout>
-        <MudDrawer @bind-Open="_drawerOpen"
-                   Variant="DrawerVariant.Responsive"
-                   Elevation="1"
-                   Color="Color.Primary"
-                   Class="layout-drawer">
-            <MudDrawerHeader>
-                <MudText Typo="Typo.h5" Class="drawer-title">Clinic Booking</MudText>
-                <MudText Typo="Typo.subtitle2" Class="drawer-subtitle">Plan your next visit</MudText>
-            </MudDrawerHeader>
-            <NavMenu />
-        </MudDrawer>
+<MudThemeProvider Theme="@AppTheme.LightTheme">
+    <MudSnackbarProvider PreventDuplicates="true">
+        <MudLayout>
+            <MudAppBar Elevation="0" Color="Color.Surface" Class="layout-appbar">
+                <MudIconButton Icon="@Icons.Material.Filled.Menu"
+                               Color="Color.Inherit"
+                               Edge="Edge.Start"
+                               OnClick="ToggleDrawer"
+                               Class="d-lg-none" />
+                <MudText Typo="Typo.h5" Class="appbar-title">Clinic Booking</MudText>
+                <MudSpacer />
+                <LoginBar />
+            </MudAppBar>
 
+            <MudDrawer @bind-Open="_drawerOpen"
+                       Variant="DrawerVariant.Responsive"
+                       Elevation="1"
+                       Color="Color.Primary"
+                       Class="layout-drawer">
+                <MudDrawerHeader>
+                    <MudText Typo="Typo.h5" Class="drawer-title">Clinic Booking</MudText>
+                    <MudText Typo="Typo.subtitle2" Class="drawer-subtitle">Plan your next visit</MudText>
+                </MudDrawerHeader>
+                <NavMenu />
+            </MudDrawer>
+
+            <MudMainContent>
                 <MudContainer MaxWidth="MaxWidth.Large" Class="layout-container">
                     @Body
                 </MudContainer>
