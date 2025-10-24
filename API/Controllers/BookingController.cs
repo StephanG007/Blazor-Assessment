@@ -13,13 +13,11 @@ namespace API.Controllers.Booking;
 public class BookingController(IBookingService bookingService) : ControllerBase
 {
     [HttpGet("clinics/{clinicId:int}/availability")]
-    public async Task<ActionResult<IEnumerable<AvailableSlotResponse>>> GetAvailability(int clinicId, [FromQuery] DateOnly? date, CancellationToken cancellationToken)
+    public async Task<ActionResult<IEnumerable<AvailableSlotResponse>>> GetAvailability(int clinicId, [FromQuery] DateOnly? startDate, [FromQuery] DateOnly? endDate, CancellationToken cancellationToken)
     {
-        var targetDate = date ?? DateOnly.FromDateTime(DateTime.Now.Date);
-
         try
         {
-            var availableSlots = await bookingService.GetAvailableSlotsAsync(clinicId, targetDate, cancellationToken);
+            var availableSlots = await bookingService.GetAvailableSlotsAsync(clinicId, startDate, endDate, cancellationToken);
             
             return Ok(availableSlots);
         }

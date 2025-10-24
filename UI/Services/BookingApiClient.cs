@@ -20,7 +20,7 @@ public class BookingApiClient(HttpClient httpClient)
         response.EnsureSuccessStatusCode();
 
         var slots = await response.Content.ReadFromJsonAsync<IReadOnlyList<AvailableSlotResponse>>(cancellationToken: cancellationToken);
-        return slots ?? [];
+        return slots ?? Array.Empty<AvailableSlotResponse>();
     }
 
     public async Task<BookingDetailsResponse> CreateBookingAsync(BookingRequest request, CancellationToken cancellationToken = default)
