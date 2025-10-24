@@ -2,31 +2,32 @@ using API.Data;
 using API.Data.Entities;
 using API.Extensions;
 using API.Interfaces;
+using Bogus.DataSets;
 using Contracts.Bookings;
 using Microsoft.EntityFrameworkCore;
 
 namespace API.Services;
 
-public class BookingService(AppDbContext dbContext) : IBookingService
+public class BookingService(AppDbContext db) : IBookingService
 {
-    public async Task<IReadOnlyList<AvailableSlotResponse>> GetAvailableSlotsAsync(int clinicId, DateOnly date, CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<AvailableSlotResponse>> GetAvailableSlotsAsync(int clinicId, DateOnly? startDate, DateOnly? endDate, CancellationToken cancellationToken = default)
     {
-        var clinicExists = await dbContext.Clinics
+        var clinicExists = await db.Clinics
             .AsNoTracking()
             .AnyAsync(clinic => clinic.Id == clinicId, cancellationToken);
 
         if (!clinicExists)
             throw new KeyNotFoundException($"Clinic with id {clinicId} was not found.");
-
-        var dayStart = date.ToDateTime(TimeOnly.MinValue);
-        var dayEnd = dayStart.AddDays(1);
-
-        var availableSlots = await dbContext.AppointmentSlots
+        
+        var dayStart = startDate?.ToDateTime(TimeOnly.MinValue) ?? DateTime.Today;
+        var dayEnd = endDate?.ToDateTime(TimeOnly.MaxValue) ?? DateTime.Today.AddDays(7);
+        
+        var availableSlots = await db.AppointmentSlots
             .AsNoTracking()
             .Include(a => a.Booking)
             .Where(slot => slot.ClinicId == clinicId
                 && slot.IsActive
-                && slot.Booking == null
+                && !db.Bookings.Any(b => b.AppointmentSlotId == slot.Id)
                 && slot.StartTime >= dayStart
                 && slot.StartTime < dayEnd)
             .OrderBy(slot => slot.StartTime)
@@ -36,15 +37,14 @@ public class BookingService(AppDbContext dbContext) : IBookingService
         return availableSlots;
     }
 
-    public async Task<BookingDetailsResponse> CreateBookingAsync(BookingRequest request, CancellationToken cancellationToken = default)
+    public async Task<BookingDetailsResponse> CreateBookingAsync(BookingRequest request, CancellationToken ct = default)
     {
-        var slot = await dbContext.AppointmentSlots
+        var slot = await db.AppointmentSlots
             .Include(slot => slot.Clinic)
-            .Where(slot => slot.IsActive
-               && slot.ClinicId == request.ClinicId
-               && slot.Id == request.AppointmentSlotId
-               && slot.Booking == null)
-            .FirstOrDefaultAsync(cancellationToken);
+            .FirstOrDefaultAsync(slot => slot.Id == request.AppointmentSlotId
+                                    && slot.ClinicId == request.ClinicId
+                                    && slot.IsActive, ct);
+            
 
         if (slot == null)
             throw new Exception($"Appointment slot with id {request.AppointmentSlotId} was not available.");
@@ -58,20 +58,20 @@ public class BookingService(AppDbContext dbContext) : IBookingService
             CreatedAt = DateTime.UtcNow
         };
 
-        dbContext.Bookings.Add(booking);
-        await dbContext.SaveChangesAsync(cancellationToken);
+        db.Bookings.Add(booking);
+        await db.SaveChangesAsync(ct);
         
         return booking.ToDetailsResponse();
     }
 
-    public async Task<BookingDetailsResponse?> GetBookingByIdAsync(int bookingId, CancellationToken cancellationToken = default)
+    public async Task<BookingDetailsResponse?> GetBookingByIdAsync(int bookingId, CancellationToken ct = default)
     {
-        return await dbContext.Bookings
+        return await db.Bookings
             .AsNoTracking()
             .Where(b => b.Id == bookingId)
             .Include(b => b.AppointmentSlot)
                 .ThenInclude(a => a.Clinic)
             .Select(b => b.ToDetailsResponse())
-            .FirstOrDefaultAsync(cancellationToken);
+            .FirstOrDefaultAsync(ct);
     }
 }
