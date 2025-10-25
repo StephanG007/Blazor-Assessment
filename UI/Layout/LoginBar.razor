@@ -5,67 +5,64 @@
 @inject AuthState AuthState
 @implements IDisposable
 
-<MudStack Direction="Row" AlignItems="AlignItems.Center" JustifyContent="Flex-end" Spacing="1" Class="login-bar">
+<div class="login-bar">
     @if (currentUser is null)
     {
-        <MudForm @ref="_form" Model="loginModel" OnValidSubmit="HandleLoginAsync" Class="login-form">
-            <MudStack Direction="Row" AlignItems="AlignItems.Center" Spacing="1">
-                <MudTextField @bind-Value="loginModel.Email"
-                              For="@(() => loginModel.Email)"
-                              Placeholder="Email"
-                              Variant="Variant.Outlined"
-                              Dense="true"
-                              Adornment="Adornment.Start"
-                              AdornmentIcon="@Icons.Material.Filled.Email"
-                              Immediate="true"
-                              Disabled="@isBusy" />
-                <MudTextField @bind-Value="loginModel.Password"
-                              For="@(() => loginModel.Password)"
-                              Placeholder="Password"
-                              Variant="Variant.Outlined"
-                              Dense="true"
-                              InputType="InputType.Password"
-                              Adornment="Adornment.Start"
-                              AdornmentIcon="@Icons.Material.Filled.Lock"
-                              Immediate="true"
-                              Disabled="@isBusy" />
-                <MudButton Type="ButtonType.Submit"
-                           Variant="Variant.Filled"
-                           Color="Color.Primary"
-                           Loading="@isBusy"
-                           Disabled="@isBusy">
-                    Log in
-                </MudButton>
-            </MudStack>
+        <EditForm EditContext="_editContext" OnValidSubmit="HandleLoginAsync" class="login-form">
+            <DataAnnotationsValidator />
+            <div class="login-fields">
+                <div class="dx-field login-field">
+                    <InputText id="login-email"
+                               class="dx-texteditor dx-editor-outlined"
+                               @bind-Value="loginModel.Email"
+                               disabled="@isBusy"
+                               placeholder="Email"
+                               type="email"
+                               autocomplete="username" />
+                    <ValidationMessage For="() => loginModel.Email" class="validation" />
+                </div>
+                <div class="dx-field login-field">
+                    <InputText id="login-password"
+                               class="dx-texteditor dx-editor-outlined"
+                               @bind-Value="loginModel.Password"
+                               disabled="@isBusy"
+                               type="password"
+                               placeholder="Password"
+                               autocomplete="current-password" />
+                    <ValidationMessage For="() => loginModel.Password" class="validation" />
+                </div>
+                <button type="submit"
+                        class="dx-button dx-button-mode-contained dx-button-type-default login-button"
+                        disabled="@isBusy">
+                    <span class="dx-button-content">@(isBusy ? "Signing in..." : "Log in")</span>
+                </button>
+            </div>
             @if (!string.IsNullOrWhiteSpace(errorMessage))
             {
-                <MudText Typo="Typo.caption" Color="Color.Error" Class="login-error">@errorMessage</MudText>
+                <div class="dx-invalid-message login-error">@errorMessage</div>
             }
-        </MudForm>
+        </EditForm>
     }
     else
     {
-        <MudStack Direction="Row" AlignItems="AlignItems.Center" Spacing="1" Class="user-summary">
-            <MudAvatar Size="Size.Medium"
-                       Image="@currentUser.ImageUrl"
-                       Color="Color.Secondary"
-                       Class="user-avatar">
+        <div class="user-summary dx-card">
+            <div class="user-avatar" style="@BuildAvatarStyle(currentUser.ImageUrl)">
                 @GetInitial(currentUser.DisplayName)
-            </MudAvatar>
-            <MudText Typo="Typo.subtitle2" Class="user-name">@currentUser.DisplayName</MudText>
-            <MudButton Variant="Variant.Text"
-                       Color="Color.Primary"
-                       OnClick="HandleLogout"
-                       Disabled="@isBusy">
-                Log out
-            </MudButton>
-        </MudStack>
+            </div>
+            <div class="user-name">@currentUser.DisplayName</div>
+            <button type="button"
+                    class="dx-button dx-button-mode-text dx-button-type-default logout-button"
+                    @onclick="HandleLogout"
+                    disabled="@isBusy">
+                <span class="dx-button-content">Log out</span>
+            </button>
+        </div>
     }
-</MudStack>
+</div>
 
 @code {
-    private MudForm? _form;
     private LoginViewModel loginModel = new();
+    private EditContext? _editContext;
     private bool isBusy;
     private string? errorMessage;
     private LoginResponse? currentUser;
@@ -74,6 +71,7 @@
     {
         currentUser = AuthState.CurrentUser;
         AuthState.StateChanged += HandleAuthStateChanged;
+        _editContext = new EditContext(loginModel);
     }
 
     private async Task HandleLoginAsync()
@@ -92,7 +90,7 @@
             else
             {
                 loginModel = new LoginViewModel();
-                await (_form?.ResetAsync() ?? Task.CompletedTask);
+                _editContext = new EditContext(loginModel);
             }
         }
         catch
@@ -133,6 +131,17 @@
 
         var trimmed = name.Trim();
         return trimmed[..1].ToUpperInvariant();
+    }
+
+    private static string BuildAvatarStyle(string? imageUrl)
+    {
+        if (string.IsNullOrWhiteSpace(imageUrl))
+        {
+            return string.Empty;
+        }
+
+        var sanitized = imageUrl.Replace("'", "\\'");
+        return $"background-image: url('{sanitized}');";
     }
 
     private sealed class LoginViewModel
