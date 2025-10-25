@@ -7,173 +7,142 @@
 @using UI.Services
 @inject BookingApiClient BookingApiClient
 @inject AuthState AuthState
+@inject IJSRuntime JS
 @implements IDisposable
+@implements IAsyncDisposable
 
 <PageTitle>Book an appointment</PageTitle>
 
-<MudStack Spacing="2" Class="home-wrapper">
-    <MudText Typo="Typo.h3" Class="page-title">Book an appointment</MudText>
-    <MudText Typo="Typo.subtitle1" Class="page-lead">Choose a clinic, pick a date, and reserve a slot in just a few clicks.</MudText>
+<div class="home-wrapper">
+    <div class="dx-card home-card">
+        <h1 class="page-title">Book an appointment</h1>
+        <p class="page-lead">Choose a clinic, pick a date, and reserve a slot in just a few clicks.</p>
 
-    @if (_clinicsLoadError is not null)
-    {
-        <MudAlert Severity="Severity.Error">@_clinicsLoadError</MudAlert>
-    }
-    else if (_clinicSummary is null)
-    {
-        <MudPaper Elevation="0" Class="pa-6 d-flex flex-column align-items-center gap-3">
-            <MudProgressCircular Indeterminate="true" Color="Color.Primary" Size="Size.Large" />
-            <MudText Typo="Typo.subtitle2" Color="Color.Primary">Loading clinics...</MudText>
-        </MudPaper>
-    }
-    else if (_clinicSummary.Clinics.Count == 0)
-    {
-        <MudAlert Severity="Severity.Info">No clinics are currently available for booking.</MudAlert>
-    }
-    else
-    {
-        <EditForm Model="_bookingForm" OnValidSubmit="SubmitAsync">
-            <DataAnnotationsValidator />
-            <MudPaper Elevation="1" Class="pa-6">
-                <MudStack Spacing="3">
-                    <MudGrid Spacing="2">
-                        <MudItem xs="12" md="6">
-                            <MudSelect T="int"
-                                       Label="Clinic"
-                                       Value="_bookingForm.ClinicId"
-                                       ValueChanged="OnClinicChanged"
-                                       ValueExpression="@(() => _bookingForm.ClinicId)"
-                                       Variant="Variant.Outlined"
-                                       Dense="true"
-                                       Required="true">
-                                @foreach (var clinic in _clinicSummary.Clinics)
-                                {
-                                    <MudSelectItem Value="@clinic.Id">@clinic.Name (@clinic.City, @clinic.Province)</MudSelectItem>
-                                }
-                            </MudSelect>
-                        </MudItem>
-                        <MudItem xs="12" md="6">
-                            <MudDatePicker Label="Date"
-                                           Date="SelectedDateTime"
-                                           DateChanged="OnDateChanged"
-                                           MinDate="DateTime.Today"
-                                           PickerVariant="PickerVariant.Inline"
-                                           DisableToolbar="true"
-                                           Variant="Variant.Outlined"
-                                           Dense="true" />
-                        </MudItem>
-                    </MudGrid>
-
-                    <MudDivider />
-
-                    <MudStack Spacing="1">
-                        <MudText Typo="Typo.h6" Class="section-title">Available slots</MudText>
-                        @if (!string.IsNullOrEmpty(_availabilityError))
-                        {
-                            <MudAlert Severity="Severity.Warning">@_availabilityError</MudAlert>
-                        }
-                        else if (_isLoadingAvailability)
-                        {
-                            <MudStack Direction="Row" AlignItems="AlignItems.Center" Spacing="1">
-                                <MudProgressCircular Indeterminate="true" Color="Color.Primary" Size="Size.Medium" />
-                                <MudText Typo="Typo.body2" Color="Color.Primary">Checking availability...</MudText>
-                            </MudStack>
-                        }
-                        else if (_availableSlots.Count == 0)
-                        {
-                            <MudAlert Severity="Severity.Info">No open slots for the selected date.</MudAlert>
-                        }
-                        else
-                        {
-                            <MudGrid Spacing="2">
-                                @foreach (var slot in _availableSlots)
-                                {
-                                    var isSelected = _bookingForm.AppointmentSlotId == slot.Id;
-                                    <MudItem xs="12" sm="6" md="4" lg="3" @key="slot.Id">
-                                        <MudButton Variant="Variant.Filled"
-                                                   Color="@(isSelected ? Color.Secondary : Color.Primary)"
-                                                   FullWidth="true"
-                                                   DisableElevation="true"
-                                                   Disabled="@_isSubmitting"
-                                                   OnClick="() => SelectSlot(slot.Id)">
-                                            <MudText Typo="Typo.body2" Class="slot-time">
-                                                @slot.StartTime.ToLocalTime().ToString("HH:mm") - @slot.EndTime.ToLocalTime().ToString("HH:mm")
-                                            </MudText>
-                                        </MudButton>
-                                    </MudItem>
-                                }
-                            </MudGrid>
-                            <ValidationMessage For="() => _bookingForm.AppointmentSlotId" class="mud-error-text" />
-                        }
-                    </MudStack>
-
-                    <MudDivider />
-
-                    <MudStack Spacing="1">
-                        <MudText Typo="Typo.h6" Class="section-title">Patient details</MudText>
-                        <MudGrid Spacing="2">
-                            <MudItem xs="12" md="6">
-                                <MudTextField @bind-Value="_bookingForm.PatientName"
-                                              For="@(() => _bookingForm.PatientName)"
-                                              Label="Full name"
-                                              Variant="Variant.Outlined"
-                                              Required="true" />
-                            </MudItem>
-                            <MudItem xs="12" md="6">
-                                <MudTextField @bind-Value="_bookingForm.PatientEmail"
-                                              For="@(() => _bookingForm.PatientEmail)"
-                                              Label="Email"
-                                              Variant="Variant.Outlined"
-                                              Required="true" />
-                            </MudItem>
-                            <MudItem xs="12">
-                                <MudTextField @bind-Value="_bookingForm.Notes"
-                                              For="@(() => _bookingForm.Notes)"
-                                              Label="Notes (optional)"
-                                              Variant="Variant.Outlined"
-                                              Lines="3" />
-                            </MudItem>
-                        </MudGrid>
-                    </MudStack>
-
-                    <MudStack Spacing="1" AlignItems="AlignItems.Start">
-                        @if (!string.IsNullOrEmpty(_submissionError))
-                        {
-                            <MudAlert Severity="Severity.Error">@_submissionError</MudAlert>
-                        }
-                        <MudButton ButtonType="ButtonType.Submit"
-                                   Color="Color.Success"
-                                   Variant="Variant.Filled"
-                                   Disabled="@(_isSubmitting || _bookingForm.AppointmentSlotId is null)"
-                                   Loading="@_isSubmitting">
-                            Book appointment
-                        </MudButton>
-                    </MudStack>
-                </MudStack>
-            </MudPaper>
-        </EditForm>
-
-        @if (_confirmation is not null)
+        @if (_clinicsLoadError is not null)
         {
-            <MudPaper Elevation="1" Class="pa-6 confirmation-card">
-                <MudStack Spacing="1">
-                    <MudText Typo="Typo.h5">Booking confirmed!</MudText>
-                    <MudText Typo="Typo.body1">
-                        Your appointment at <b>@_confirmation.ClinicName</b> is scheduled for
-                        <b>@_confirmation.StartTime.ToLocalTime().ToString("dddd, dd MMMM yyyy HH:mm")</b>.
-                    </MudText>
-                    <MudList T="object" Dense="true">
-                        <MudListItem T="object"><MudText Typo="Typo.body2"><b>Patient:</b> @_confirmation.PatientName (@_confirmation.PatientEmail)</MudText></MudListItem>
+            <div class="dx-alert dx-alert-danger">@_clinicsLoadError</div>
+        }
+        else if (_clinicSummary is null)
+        {
+            <div class="loading-card">
+                <div id="clinicLoader" class="dx-loadindicator"></div>
+                <span class="loading-text">Loading clinics...</span>
+            </div>
+        }
+        else if (_clinicSummary.Clinics.Count == 0)
+        {
+            <div class="dx-alert dx-alert-warning">No clinics are currently available for booking.</div>
+        }
+        else
+        {
+            <EditForm Model="_bookingForm" OnValidSubmit="SubmitAsync" class="booking-form">
+                <DataAnnotationsValidator />
+
+                <div class="dx-fieldset fieldset-grid">
+                    <div class="dx-field">
+                        <div class="dx-field-label">Clinic</div>
+                        <div class="dx-field-value">
+                            <div id="clinicSelect" class="dx-field-value-control"></div>
+                        </div>
+                    </div>
+                    <div class="dx-field">
+                        <div class="dx-field-label">Date</div>
+                        <div class="dx-field-value">
+                            <div id="bookingDate" class="dx-field-value-control"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <section class="availability-section">
+                    <div class="section-header">Available slots</div>
+
+                    @if (!string.IsNullOrEmpty(_availabilityError))
+                    {
+                        <div class="dx-alert dx-alert-warning">@_availabilityError</div>
+                    }
+
+                    <div class="loading-inline" hidden="@(!_isLoadingAvailability)">
+                        <div id="availabilityLoader" class="dx-loadindicator small"></div>
+                        <span>Checking availability...</span>
+                    </div>
+
+                    @if (!_isLoadingAvailability && string.IsNullOrEmpty(_availabilityError) && _availableSlots.Count == 0)
+                    {
+                        <div class="dx-alert dx-alert-info">No open slots for the selected date.</div>
+                    }
+
+                    <div id="slotList" class="slot-list"></div>
+                    <ValidationMessage For="() => _bookingForm.AppointmentSlotId" class="validation" />
+                </section>
+
+                <section class="details-section">
+                    <div class="section-header">Patient details</div>
+                    <div class="details-grid">
+                        <div class="dx-field">
+                            <div class="dx-field-label">Full name</div>
+                            <div class="dx-field-value">
+                                <InputText class="dx-texteditor dx-editor-outlined"
+                                           @bind-Value="_bookingForm.PatientName"
+                                           disabled="@_isSubmitting" />
+                                <ValidationMessage For="() => _bookingForm.PatientName" class="validation" />
+                            </div>
+                        </div>
+                        <div class="dx-field">
+                            <div class="dx-field-label">Email</div>
+                            <div class="dx-field-value">
+                                <InputText class="dx-texteditor dx-editor-outlined"
+                                           @bind-Value="_bookingForm.PatientEmail"
+                                           disabled="@_isSubmitting" />
+                                <ValidationMessage For="() => _bookingForm.PatientEmail" class="validation" />
+                            </div>
+                        </div>
+                        <div class="dx-field">
+                            <div class="dx-field-label">Notes (optional)</div>
+                            <div class="dx-field-value">
+                                <InputTextArea class="dx-texteditor dx-editor-outlined"
+                                               @bind-Value="_bookingForm.Notes"
+                                               disabled="@_isSubmitting"
+                                               rows="3" />
+                                <ValidationMessage For="() => _bookingForm.Notes" class="validation" />
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="submission-section">
+                    @if (!string.IsNullOrEmpty(_submissionError))
+                    {
+                        <div class="dx-alert dx-alert-danger">@_submissionError</div>
+                    }
+
+                    <button type="submit"
+                            class="dx-button dx-button-mode-contained dx-button-type-success submit-button"
+                            disabled="@(_isSubmitting || _bookingForm.AppointmentSlotId is null)">
+                        <span class="dx-button-content">@(_isSubmitting ? "Booking..." : "Book appointment")</span>
+                    </button>
+                </section>
+            </EditForm>
+
+            @if (_confirmation is not null)
+            {
+                <div class="dx-card confirmation-card">
+                    <h2 class="section-header">Booking confirmed!</h2>
+                    <p class="confirmation-text">
+                        Your appointment at <strong>@_confirmation.ClinicName</strong> is scheduled for
+                        <strong>@_confirmation.StartTime.ToLocalTime().ToString("dddd, dd MMMM yyyy HH:mm")</strong>.
+                    </p>
+                    <ul class="confirmation-list">
+                        <li><strong>Patient:</strong> @_confirmation.PatientName (@_confirmation.PatientEmail)</li>
                         @if (!string.IsNullOrWhiteSpace(_confirmation.Notes))
                         {
-                            <MudListItem T="object"><MudText Typo="Typo.body2"><b>Notes:</b> @_confirmation.Notes</MudText></MudListItem>
+                            <li><strong>Notes:</strong> @_confirmation.Notes</li>
                         }
-                    </MudList>
-                </MudStack>
-            </MudPaper>
+                    </ul>
+                </div>
+            }
         }
-    }
-</MudStack>
+    </div>
+</div>
 
 @code {
     private readonly BookingFormModel _bookingForm = new();
@@ -186,6 +155,8 @@
     private bool _isSubmitting;
     private string? _submissionError;
     private BookingDetailsResponse? _confirmation;
+    private IJSObjectReference? _bookingModule;
+    private DotNetObjectReference<Home>? _dotNetRef;
 
     private DateTime SelectedDateTime => _selectedDate.ToDateTime(TimeOnly.MinValue);
 
@@ -196,6 +167,23 @@
         await LoadClinicsAsync();
     }
 
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender)
+        {
+            return;
+        }
+
+        _bookingModule = await JS.InvokeAsync<IJSObjectReference>("import", "./js/booking.js");
+        _dotNetRef = DotNetObjectReference.Create(this);
+        await _bookingModule.InvokeVoidAsync("initialize", _dotNetRef);
+
+        await SyncClinicsAsync();
+        await SyncDateAsync();
+        await SyncSlotsAsync();
+        await SyncSubmissionStateAsync();
+    }
+
     private async Task LoadClinicsAsync()
     {
         _clinicsLoadError = null;
@@ -204,14 +192,19 @@
         {
             _clinicSummary = await BookingApiClient.GetClinicsAsync();
             if (_clinicSummary?.Clinics.Count > 0 && _bookingForm.ClinicId == 0)
+            {
                 _bookingForm.ClinicId = _clinicSummary.Clinics[0].Id;
-            
+            }
+
+            await SyncClinicsAsync();
             await LoadAvailabilityAsync();
         }
         catch (Exception)
         {
             _clinicsLoadError = "We couldn't load clinics at the moment. Please try again later.";
         }
+
+        await InvokeAsync(StateHasChanged);
     }
 
     private async Task LoadAvailabilityAsync()
@@ -222,10 +215,14 @@
 
         if (_bookingForm.ClinicId == 0)
         {
+            await SyncSlotsAsync();
+            await InvokeAsync(StateHasChanged);
             return;
         }
 
         _isLoadingAvailability = true;
+        await SyncSlotsAsync();
+        await InvokeAsync(StateHasChanged);
 
         try
         {
@@ -249,8 +246,13 @@
         finally
         {
             _isLoadingAvailability = false;
+            await SyncSlotsAsync();
+            await InvokeAsync(StateHasChanged);
         }
     }
+
+    [JSInvokable]
+    public Task OnClinicChangedFromJs(int clinicId) => OnClinicChanged(clinicId);
 
     private async Task OnClinicChanged(int clinicId)
     {
@@ -261,17 +263,29 @@
 
         _bookingForm.ClinicId = clinicId;
         _bookingForm.AppointmentSlotId = null;
+        await SyncClinicsAsync();
         await LoadAvailabilityAsync();
     }
 
-    private async Task OnDateChanged(DateTime? date)
+    [JSInvokable]
+    public Task OnDateChangedFromJs(string? isoDate)
     {
-        if (date is null)
+        if (string.IsNullOrWhiteSpace(isoDate))
         {
-            return;
+            return Task.CompletedTask;
         }
 
-        var newDate = DateOnly.FromDateTime(date.Value);
+        if (!DateTime.TryParse(isoDate, out var parsed))
+        {
+            return Task.CompletedTask;
+        }
+
+        return OnDateChanged(parsed);
+    }
+
+    private async Task OnDateChanged(DateTime date)
+    {
+        var newDate = DateOnly.FromDateTime(date);
         if (newDate == _selectedDate)
         {
             return;
@@ -279,7 +293,22 @@
 
         _selectedDate = newDate;
         _bookingForm.AppointmentSlotId = null;
+        await SyncDateAsync();
         await LoadAvailabilityAsync();
+    }
+
+    [JSInvokable]
+    public async Task OnSlotSelectedFromJs(int? slotId)
+    {
+        if (slotId is null)
+        {
+            _bookingForm.AppointmentSlotId = null;
+            await InvokeAsync(StateHasChanged);
+            return;
+        }
+
+        SelectSlot(slotId.Value);
+        await InvokeAsync(StateHasChanged);
     }
 
     private void SelectSlot(int slotId)
@@ -296,10 +325,12 @@
         if (_bookingForm.AppointmentSlotId is null)
         {
             _submissionError = "Please select an available slot.";
+            await InvokeAsync(StateHasChanged);
             return;
         }
 
         _isSubmitting = true;
+        await SyncSubmissionStateAsync();
 
         try
         {
@@ -315,6 +346,7 @@
             _confirmation = await BookingApiClient.CreateBookingAsync(request);
             _availableSlots = _availableSlots.Where(slot => slot.Id != request.AppointmentSlotId).ToList();
             _bookingForm.AppointmentSlotId = null;
+            await SyncSlotsAsync();
         }
         catch (HttpRequestException ex) when (ex.StatusCode == HttpStatusCode.Unauthorized || ex.StatusCode == HttpStatusCode.Forbidden)
         {
@@ -327,7 +359,64 @@
         finally
         {
             _isSubmitting = false;
+            await SyncSubmissionStateAsync();
         }
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task SyncClinicsAsync()
+    {
+        if (_bookingModule is null || _clinicSummary is null)
+        {
+            return;
+        }
+
+        var clinics = _clinicSummary.Clinics.Select(clinic => new
+        {
+            id = clinic.Id,
+            name = clinic.Name,
+            city = clinic.City,
+            province = clinic.Province
+        });
+
+        await _bookingModule.InvokeVoidAsync("setClinics", clinics, _bookingForm.ClinicId);
+    }
+
+    private async Task SyncDateAsync()
+    {
+        if (_bookingModule is null)
+        {
+            return;
+        }
+
+        await _bookingModule.InvokeVoidAsync("setDate", SelectedDateTime.ToString("o"));
+    }
+
+    private async Task SyncSlotsAsync()
+    {
+        if (_bookingModule is null)
+        {
+            return;
+        }
+
+        var slots = _availableSlots.Select(slot => new
+        {
+            id = slot.Id,
+            label = $"{slot.StartTime.ToLocalTime():HH:mm} - {slot.EndTime.ToLocalTime():HH:mm}"
+        });
+
+        await _bookingModule.InvokeVoidAsync("setSlots", slots, _bookingForm.AppointmentSlotId, _isLoadingAvailability);
+    }
+
+    private async Task SyncSubmissionStateAsync()
+    {
+        if (_bookingModule is null)
+        {
+            return;
+        }
+
+        await _bookingModule.InvokeVoidAsync("setSubmissionState", _isSubmitting);
     }
 
     private async Task OnAuthStateChangedAsync()
@@ -359,6 +448,17 @@
     public void Dispose()
     {
         AuthState.StateChanged -= OnAuthStateChanged;
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        AuthState.StateChanged -= OnAuthStateChanged;
+        if (_bookingModule is not null)
+        {
+            await _bookingModule.DisposeAsync();
+        }
+
+        _dotNetRef?.Dispose();
     }
 
     private sealed class BookingFormModel
