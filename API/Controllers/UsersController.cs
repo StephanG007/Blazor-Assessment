@@ -4,8 +4,12 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Contracts.Users;
+using DevExtreme.AspNet.Data.ResponseModel;
+using DevExpress.Blazor;
+using DevExtreme.AspNet.Mvc;
+using static DevExtreme.AspNet.Data.DataSourceLoader;
 
-namespace API.Controllers.Users;
+namespace API.Controllers;
 
 [Authorize]
 [Route("api/[controller]")]
@@ -14,19 +18,29 @@ public class UsersController(AppDbContext db) : ControllerBase
 {
     [HttpGet]
     [Authorize(Policy = "RequireAdminRole")]
-    public async Task<ActionResult<IEnumerable<UserListResponse>>> GetUsers()
+    public async Task<ActionResult<LoadResult>> GetUsers([FromQuery] DataSourceLoadOptions loadOptions, CancellationToken ct = default)
     {
-        var users = await db.Users.Select(user => new UserListResponse
+        loadOptions.PrimaryKey ??= new[]
         {
-            Id = user.Id,
-            DisplayName = user.Name + " " + user.Surname,
-            Region = user.Region,
-            Country = user.Country,
-            Gender = user.Gender,
-            ImageUrl = user.ImageUrl
-        }).ToListAsync();
+            nameof(UserListResponse.Id)
+        };
+        loadOptions.PaginateViaPrimaryKey ??= true;
+        
+        var usersQuery = db.Users
+            .AsNoTracking()
+            .Select(user => new UserListResponse
+            {
+                Id = user.Id,
+                DisplayName = user.Name + " " + user.Surname,
+                Region = user.Region,
+                Country = user.Country,
+                Gender = user.Gender,
+                ImageUrl = user.ImageUrl
+            });
 
-        return Ok(users);
+        var loadResult = await LoadAsync(usersQuery, loadOptions, ct);
+
+        return Ok(loadResult);
     }
 
     [HttpGet("{id}")]

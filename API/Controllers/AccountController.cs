@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
-namespace API.Controllers.Account;
+namespace API.Controllers;
 
 [Route("api/[controller]")]
 [ApiController]

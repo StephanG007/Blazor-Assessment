@@ -1,12 +1,13 @@
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
+using System.Text.Json;
 using Contracts.Account;
 
 namespace UI.Services;
 
 public class AuthService(HttpClient httpClient, AuthState authState)
 {
-    public async Task<(bool Success, string? Error)> LoginAsync(string email, string password, CancellationToken cancellationToken = default)
+    public async Task<(bool Success, string? Error)> LoginAsync(string email, string password, CancellationToken ct = default)
     {
         var request = new LoginRequest
         {
@@ -14,15 +15,15 @@ public class AuthService(HttpClient httpClient, AuthState authState)
             Password = password
         };
 
-        using var response = await httpClient.PostAsJsonAsync("api/account/login", request, cancellationToken);
+        var response = await httpClient.PostAsJsonAsync("api/account/login", request, ct);
 
         if (!response.IsSuccessStatusCode)
         {
-            var errorMessage = await response.Content.ReadAsStringAsync(cancellationToken);
+            var errorMessage = await response.Content.ReadAsStringAsync(ct);
             return (false, string.IsNullOrWhiteSpace(errorMessage) ? "Login failed." : errorMessage);
         }
 
-        var loginResponse = await response.Content.ReadFromJsonAsync<LoginResponse>(cancellationToken: cancellationToken);
+        var loginResponse = await response.Content.ReadFromJsonAsync<LoginResponse>(cancellationToken: ct);
 
         if (loginResponse is null)
         {
