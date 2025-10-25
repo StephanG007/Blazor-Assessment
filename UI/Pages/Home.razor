@@ -1,16 +1,13 @@
 @page "/"
-@using System.Net
-@using System.Linq
 @using System.ComponentModel.DataAnnotations
+@using System.Net
 @using Contracts.Account
 @using Contracts.Bookings
 @using Contracts.Clinics
 @using UI.Services
 @inject BookingApiClient BookingApiClient
 @inject AuthState AuthState
-@inject IJSRuntime JS
 @implements IDisposable
-@implements IAsyncDisposable
 
 <PageTitle>Book an appointment</PageTitle>
 
@@ -23,14 +20,14 @@
         {
             <div class="dx-alert dx-alert-danger">@_clinicsLoadError</div>
         }
-        else if (_clinicSummary is null)
+        else if (_isLoadingClinics)
         {
             <div class="loading-card">
-                <div id="clinicLoader" class="dx-loadindicator"></div>
+                <DxLoadIndicator CssClass="loading-indicator" />
                 <span class="loading-text">Loading clinics...</span>
             </div>
         }
-        else if (_clinicSummary.Clinics.Count == 0)
+        else if (!HasClinics)
         {
             <div class="dx-alert dx-alert-warning">No clinics are currently available for booking.</div>
         }
@@ -43,38 +40,49 @@
                     <div class="section-header">Choose a clinic</div>
                     <GuestNotice />
 
-                    <div class="clinic-grid">
-                        @foreach (var clinic in _clinicSummary.Clinics)
-                        {
-                            var isSelected = clinic.Id == _bookingForm.ClinicId;
-                            <button type="button"
-                                    class="clinic-card@(isSelected ? " selected" : string.Empty)"
-                                    disabled="@_isSubmitting"
-                                    @onclick="() => OnClinicCardClickedAsync(clinic.Id)">
+                    <DxListBox TData="ClinicSummaryDto"
+                               TValue="int?"
+                               Data="@_clinicSummary!.Clinics"
+                               CssClass="clinic-list"
+                               SelectionMode="ListBoxSelectionMode.Single"
+                               ValueFieldName="Id"
+                               Value="@SelectedClinicId"
+                               ValueChanged="OnClinicSelected"
+                               Enabled="@(!_isSubmitting)">
+                        <ItemTemplate Context="clinic">
+                            <article class="clinic-card">
                                 <div class="clinic-card-header">
                                     <span class="clinic-name">@clinic.Name</span>
-                                    @if (isSelected && _isLoadingAvailability)
+                                    @if (SelectedClinicId == clinic.Id)
                                     {
-                                        <span class="clinic-status">Loading slots...</span>
-                                    }
-                                    else if (isSelected && string.IsNullOrEmpty(_availabilityError) && _availableSlots.Count == 0 && !_isLoadingAvailability)
-                                    {
-                                        <span class="clinic-status">No slots for this date</span>
+                                        <span class="clinic-status">
+                                            @if (_isLoadingAvailability)
+                                            {
+                                                <span>Loading slots...</span>
+                                            }
+                                            else if (string.IsNullOrEmpty(_availabilityError) && _availableSlots.Count == 0)
+                                            {
+                                                <span>No slots for this date</span>
+                                            }
+                                        </span>
                                     }
                                 </div>
                                 <span class="clinic-location">@FormatLocation(clinic.City, clinic.Province)</span>
-                            </button>
-                        }
-                    </div>
+                            </article>
+                        </ItemTemplate>
+                    </DxListBox>
                     <ValidationMessage For="() => _bookingForm.ClinicId" class="validation" />
 
                     <div class="availability-section">
                         <div class="availability-header">
                             <div class="section-header">Available slots</div>
-                            <div class="loading-inline" hidden="@(!_isLoadingAvailability)">
-                                <div id="availabilityLoader" class="dx-loadindicator small"></div>
-                                <span>Checking availability...</span>
-                            </div>
+                            @if (_isLoadingAvailability)
+                            {
+                                <div class="loading-inline">
+                                    <DxLoadIndicator CssClass="loading-indicator small" />
+                                    <span>Checking availability...</span>
+                                </div>
+                            }
                         </div>
 
                         @if (!string.IsNullOrEmpty(_availabilityError))
@@ -86,7 +94,19 @@
                             <div class="dx-alert dx-alert-info">Select a different date to see more availability.</div>
                         }
 
-                        <div id="slotList" class="slot-list"></div>
+                        <DxListBox TData="AvailableSlotResponse"
+                                   TValue="int?"
+                                   Data="@_availableSlots"
+                                   CssClass="slot-list"
+                                   SelectionMode="ListBoxSelectionMode.Single"
+                                   ValueFieldName="Id"
+                                   Value="@_bookingForm.AppointmentSlotId"
+                                   ValueChanged="OnSlotSelected"
+                                   Enabled="@(!_isLoadingAvailability && !_isSubmitting)">
+                            <ItemTemplate Context="slot">
+                                <span>@FormatSlotRange(slot)</span>
+                            </ItemTemplate>
+                        </DxListBox>
                         <ValidationMessage For="() => _bookingForm.AppointmentSlotId" class="validation" />
                     </div>
                 </section>
@@ -95,7 +115,10 @@
                     <div class="dx-field">
                         <div class="dx-field-label">Date</div>
                         <div class="dx-field-value">
-                            <div id="bookingDate" class="dx-field-value-control"></div>
+                            <DxDateEdit @bind-Date="SelectedDate"
+                                       MinDate="@DateTime.Today"
+                                       DisplayFormat="dddd, dd MMMM yyyy"
+                                       Enabled="@(!_isSubmitting)" />
                         </div>
                     </div>
                 </div>
@@ -171,56 +194,63 @@
 
 @code {
     private readonly BookingFormModel _bookingForm = new();
+    private readonly List<AvailableSlotResponse> _availableSlots = [];
     private ClinicSummaryResponse? _clinicSummary;
     private string? _clinicsLoadError;
+    private bool _isLoadingClinics;
     private bool _isLoadingAvailability;
     private string? _availabilityError;
-    private List<AvailableSlotResponse> _availableSlots = new();
-    private DateOnly _selectedDate = DateOnly.FromDateTime(DateTime.Today);
     private bool _isSubmitting;
     private string? _submissionError;
     private BookingDetailsResponse? _confirmation;
-    private IJSObjectReference? _bookingModule;
-    private DotNetObjectReference<Home>? _dotNetRef;
+    private DateOnly _selectedDate = DateOnly.FromDateTime(DateTime.Today);
+    private CancellationTokenSource? _availabilityCts;
 
-    private DateTime SelectedDateTime => _selectedDate.ToDateTime(TimeOnly.MinValue);
+    private bool HasClinics => _clinicSummary?.Clinics.Count > 0;
 
-    protected override async Task OnInitializedAsync()
+    private int? SelectedClinicId => _bookingForm.ClinicId > 0 ? _bookingForm.ClinicId : null;
+
+    private DateTime SelectedDate
+    {
+        get => _selectedDate.ToDateTime(TimeOnly.MinValue);
+        set
+        {
+            var newDate = DateOnly.FromDateTime(value);
+            if (newDate == _selectedDate)
+            {
+                return;
+            }
+
+            _selectedDate = newDate;
+            _bookingForm.AppointmentSlotId = null;
+            _ = InvokeAsync(() => LoadAvailabilityAsync());
+        }
+    }
+
+    protected override void OnInitialized()
     {
         AuthState.StateChanged += OnAuthStateChanged;
         ApplyUserDetails(AuthState.CurrentUser);
-        await LoadClinicsAsync();
     }
 
-    protected override async Task OnAfterRenderAsync(bool firstRender)
-    {
-        if (!firstRender)
-        {
-            return;
-        }
-
-        _bookingModule = await JS.InvokeAsync<IJSObjectReference>("import", "./js/booking.js");
-        _dotNetRef = DotNetObjectReference.Create(this);
-        await _bookingModule.InvokeVoidAsync("initialize", _dotNetRef);
-
-        await SyncDateAsync();
-        await SyncSlotsAsync();
-        await SyncSubmissionStateAsync();
-    }
+    protected override Task OnInitializedAsync() => LoadClinicsAsync();
 
     private async Task LoadClinicsAsync()
     {
         _clinicsLoadError = null;
+        _isLoadingClinics = true;
+        await InvokeAsync(StateHasChanged);
 
         try
         {
             _clinicSummary = await BookingApiClient.GetClinicsAsync();
-            if (_clinicSummary?.Clinics.Count > 0)
+
+            if (HasClinics)
             {
-                var hasSelectedClinic = _clinicSummary.Clinics.Any(clinic => clinic.Id == _bookingForm.ClinicId);
-                if (!hasSelectedClinic)
+                var clinics = _clinicSummary!.Clinics;
+                if (_bookingForm.ClinicId == 0 || !clinics.Exists(clinic => clinic.Id == _bookingForm.ClinicId))
                 {
-                    _bookingForm.ClinicId = _clinicSummary.Clinics[0].Id;
+                    _bookingForm.ClinicId = clinics[0].Id;
                 }
 
                 await LoadAvailabilityAsync();
@@ -235,100 +265,98 @@
         catch (Exception)
         {
             _clinicsLoadError = "We couldn't load clinics at the moment. Please try again later.";
+            _clinicSummary = null;
+            _bookingForm.ClinicId = 0;
+            _bookingForm.AppointmentSlotId = null;
+            _availableSlots.Clear();
         }
-
-        await InvokeAsync(StateHasChanged);
+        finally
+        {
+            _isLoadingClinics = false;
+            await InvokeAsync(StateHasChanged);
+        }
     }
 
-    private async Task LoadAvailabilityAsync()
+    private void OnClinicSelected(int? clinicId)
     {
-        _availabilityError = null;
-        _confirmation = null;
-        _availableSlots.Clear();
+        if (clinicId is null || clinicId.Value <= 0 || clinicId.Value == _bookingForm.ClinicId)
+        {
+            return;
+        }
+
+        _bookingForm.ClinicId = clinicId.Value;
+        _bookingForm.AppointmentSlotId = null;
+        _ = InvokeAsync(() => LoadAvailabilityAsync());
+    }
+
+    private async Task LoadAvailabilityAsync(bool preserveOutcome = false)
+    {
+        _availabilityCts?.Cancel();
+        _availabilityCts?.Dispose();
+        _availabilityCts = null;
+        if (!preserveOutcome)
+        {
+            _confirmation = null;
+            _submissionError = null;
+        }
 
         if (_bookingForm.ClinicId == 0)
         {
-            await SyncSlotsAsync();
+            _availableSlots.Clear();
+            _availabilityError = null;
+            _isLoadingAvailability = false;
             await InvokeAsync(StateHasChanged);
             return;
         }
 
+        var cts = new CancellationTokenSource();
+        _availabilityCts = cts;
+
         _isLoadingAvailability = true;
-        await SyncSlotsAsync();
+        _availabilityError = null;
         await InvokeAsync(StateHasChanged);
 
         try
         {
-            var slots = await BookingApiClient.GetAvailabilityAsync(_bookingForm.ClinicId, _selectedDate);
-            _availableSlots = slots.ToList();
-            if (!_availableSlots.Any())
+            var slots = await BookingApiClient.GetAvailabilityAsync(_bookingForm.ClinicId, _selectedDate, cts.Token);
+            _availableSlots.Clear();
+            _availableSlots.AddRange(slots);
+
+            if (_availableSlots.Count == 0)
             {
                 _bookingForm.AppointmentSlotId = null;
             }
         }
-        catch (HttpRequestException ex) when (ex.StatusCode == HttpStatusCode.Unauthorized || ex.StatusCode == HttpStatusCode.Forbidden)
+        catch (HttpRequestException ex) when (ex.StatusCode is HttpStatusCode.Unauthorized or HttpStatusCode.Forbidden)
         {
             _availabilityError = "Please log in to view the clinic availability.";
+            _availableSlots.Clear();
             _bookingForm.AppointmentSlotId = null;
+        }
+        catch (OperationCanceledException) when (cts.IsCancellationRequested)
+        {
+            return;
         }
         catch (Exception)
         {
             _availabilityError = "We couldn't retrieve availability. Please try again.";
+            _availableSlots.Clear();
             _bookingForm.AppointmentSlotId = null;
         }
         finally
         {
-            _isLoadingAvailability = false;
-            await SyncSlotsAsync();
-            await InvokeAsync(StateHasChanged);
+            if (!cts.IsCancellationRequested)
+            {
+                _isLoadingAvailability = false;
+                await InvokeAsync(StateHasChanged);
+            }
+
+            _availabilityCts?.Dispose();
+            _availabilityCts = null;
         }
     }
 
-    [JSInvokable]
-    public Task OnDateChangedFromJs(string? isoDate)
-    {
-        if (string.IsNullOrWhiteSpace(isoDate))
-        {
-            return Task.CompletedTask;
-        }
-
-        if (!DateTime.TryParse(isoDate, out var parsed))
-        {
-            return Task.CompletedTask;
-        }
-
-        return OnDateChanged(parsed);
-    }
-
-    private async Task OnDateChanged(DateTime date)
-    {
-        var newDate = DateOnly.FromDateTime(date);
-        if (newDate == _selectedDate)
-        {
-            return;
-        }
-
-        _selectedDate = newDate;
-        _bookingForm.AppointmentSlotId = null;
-        await SyncDateAsync();
-        await LoadAvailabilityAsync();
-    }
-
-    [JSInvokable]
-    public async Task OnSlotSelectedFromJs(int? slotId)
-    {
-        if (slotId is null)
-        {
-            _bookingForm.AppointmentSlotId = null;
-            await InvokeAsync(StateHasChanged);
-            return;
-        }
-
-        SelectSlot(slotId.Value);
-        await InvokeAsync(StateHasChanged);
-    }
-
-    private void SelectSlot(int slotId)
+    private void OnSlotSelected(int? slotId)
     {
         _bookingForm.AppointmentSlotId = slotId;
         _submissionError = null;
@@ -347,7 +375,7 @@
         }
 
         _isSubmitting = true;
-        await SyncSubmissionStateAsync();
+        await InvokeAsync(StateHasChanged);
 
         try
         {
@@ -361,11 +389,10 @@
             };
 
             _confirmation = await BookingApiClient.CreateBookingAsync(request);
-            _availableSlots = _availableSlots.Where(slot => slot.Id != request.AppointmentSlotId).ToList();
+            _availableSlots.RemoveAll(slot => slot.Id == request.AppointmentSlotId);
             _bookingForm.AppointmentSlotId = null;
-            await SyncSlotsAsync();
         }
-        catch (HttpRequestException ex) when (ex.StatusCode == HttpStatusCode.Unauthorized || ex.StatusCode == HttpStatusCode.Forbidden)
+        catch (HttpRequestException ex) when (ex.StatusCode is HttpStatusCode.Unauthorized or HttpStatusCode.Forbidden)
         {
             _submissionError = "You need to be logged in to complete a booking.";
         }
@@ -376,58 +403,8 @@
         finally
         {
             _isSubmitting = false;
-            await SyncSubmissionStateAsync();
+            await LoadAvailabilityAsync(preserveOutcome: true);
         }
-
-        await InvokeAsync(StateHasChanged);
-    }
-
-    private async Task SyncDateAsync()
-    {
-        if (_bookingModule is null)
-        {
-            return;
-        }
-
-        await _bookingModule.InvokeVoidAsync("setDate", SelectedDateTime.ToString("o"));
-    }
-
-    private async Task SyncSlotsAsync()
-    {
-        if (_bookingModule is null)
-        {
-            return;
-        }
-
-        var slots = _availableSlots.Select(slot => new
-        {
-            id = slot.Id,
-            label = $"{slot.StartTime.ToLocalTime():HH:mm} - {slot.EndTime.ToLocalTime():HH:mm}"
-        });
-
-        await _bookingModule.InvokeVoidAsync("setSlots", slots, _bookingForm.AppointmentSlotId, _isLoadingAvailability);
-    }
-
-    private async Task SyncSubmissionStateAsync()
-    {
-        if (_bookingModule is null)
-        {
-            return;
-        }
-
-        await _bookingModule.InvokeVoidAsync("setSubmissionState", _isSubmitting);
-    }
-
-    private async Task OnClinicCardClickedAsync(int clinicId)
-    {
-        if (_bookingForm.ClinicId == clinicId || _isSubmitting)
-        {
-            return;
-        }
-
-        _bookingForm.ClinicId = clinicId;
-        _bookingForm.AppointmentSlotId = null;
-        await LoadAvailabilityAsync();
     }
 
     private static string FormatLocation(string? city, string? province)
@@ -450,46 +427,31 @@
         return $"{city}, {province}";
     }
 
-    private async Task OnAuthStateChangedAsync()
-    {
-        ApplyUserDetails(AuthState.CurrentUser);
-        await LoadAvailabilityAsync();
-        StateHasChanged();
-    }
+    private static string FormatSlotRange(AvailableSlotResponse slot) =>
+        $"{slot.StartTime.ToLocalTime():HH:mm} - {slot.EndTime.ToLocalTime():HH:mm}";
 
     private void OnAuthStateChanged()
     {
-        _ = InvokeAsync(OnAuthStateChangedAsync);
+        ApplyUserDetails(AuthState.CurrentUser);
+        _ = InvokeAsync(() => LoadAvailabilityAsync());
     }
 
     private void ApplyUserDetails(LoginResponse? user)
     {
         if (user is null)
-        {
             return;
-        }
 
         _bookingForm.PatientEmail = user.Email;
         if (string.IsNullOrWhiteSpace(_bookingForm.PatientName))
-        {
             _bookingForm.PatientName = user.DisplayName;
-        }
     }
 
     public void Dispose()
     {
         AuthState.StateChanged -= OnAuthStateChanged;
-    }
-
-    public async ValueTask DisposeAsync()
-    {
-        AuthState.StateChanged -= OnAuthStateChanged;
-        if (_bookingModule is not null)
-        {
-            await _bookingModule.DisposeAsync();
-        }
-
-        _dotNetRef?.Dispose();
+        _availabilityCts?.Cancel();
+        _availabilityCts?.Dispose();
+        _availabilityCts = null;
     }
 
     private sealed class BookingFormModel

@@ -46,11 +46,7 @@
                             <DxDataGridColumn FieldName="DisplayName" Caption="Name" />
                             <DxDataGridColumn FieldName="Region" Caption="Region" />
                             <DxDataGridColumn FieldName="Country" Caption="Country" />
-                            <DxDataGridColumn FieldName="Gender" Caption="Gender">
-                                <CellDisplayTemplate Context="cellContext">
-                                    @FormatGender(cellContext.DataItem)
-                                </CellDisplayTemplate>
-                            </DxDataGridColumn>
+                            <DxDataGridColumn FieldName="Gender" Caption="Gender" />
                         </Columns>
                     </DxDataGrid>
                 }
@@ -135,21 +131,7 @@
         }
     }
 
-    private async void HandleAuthStateChanged()
-    {
-        await InvokeAsync(async () =>
-        {
-            await LoadUsersAsync();
-            StateHasChanged();
-        });
-    }
-
-    private static string FormatGender(UserListResponse user) => user.Gender switch
-    {
-        1 => "Female",
-        0 => "Male",
-        _ => "Unspecified"
-    };
+    private void HandleAuthStateChanged() => _ = InvokeAsync(LoadUsersAsync);
 
     public void Dispose()
     {

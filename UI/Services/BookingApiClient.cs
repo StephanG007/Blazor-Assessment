@@ -1,43 +1,30 @@
+using System.Net.Http.Json;
 using System.Text.Json;
 using Contracts.Bookings;
 using Contracts.Clinics;
 
 namespace UI.Services;
 
-public class BookingApiClient(HttpClient httpClient)
+public sealed class BookingApiClient(HttpClient httpClient)
 {
-    public async Task<ClinicSummaryResponse?> GetClinicsAsync(CancellationToken ct = default)
-    {
-        using var response = await httpClient.GetAsync("api/clinics", ct);
-        response.EnsureSuccessStatusCode();
-        
-        var body =  await response.Content.ReadAsStringAsync(ct);
+    private static readonly JsonSerializerOptions SerializerOptions = new(JsonSerializerDefaults.Web);
 
-        return JsonSerializer.Deserialize<ClinicSummaryResponse>(body);
-    }
+    public Task<ClinicSummaryResponse?> GetClinicsAsync(CancellationToken ct = default) =>
+        httpClient.GetFromJsonAsync<ClinicSummaryResponse>("api/clinics", SerializerOptions, ct);
 
     public async Task<IReadOnlyList<AvailableSlotResponse>> GetAvailabilityAsync(int clinicId, DateOnly date, CancellationToken ct = default)
     {
-        using var response = await httpClient.GetAsync($"api/booking/clinics/{clinicId}/availability?date={date:yyyy-MM-dd}", ct);
-        response.EnsureSuccessStatusCode();
-        
-        var body = await response.Content.ReadAsStringAsync(ct);
-
-        var slots =  JsonSerializer.Deserialize<List<AvailableSlotResponse>>(body);
+        var endpoint = $"api/booking/clinics/{clinicId}/availability?date={date:yyyy-MM-dd}";
+        var slots = await httpClient.GetFromJsonAsync<List<AvailableSlotResponse>>(endpoint, SerializerOptions, ct);
         return slots ?? [];
     }
 
     public async Task<BookingDetailsResponse> CreateBookingAsync(BookingRequest request, CancellationToken ct = default)
     {
-        using var response = await httpClient.PostAsync(
-            "api/booking/create", 
-            new StringContent(JsonSerializer.Serialize(request))
-        , ct);
+        using var response = await httpClient.PostAsJsonAsync("api/booking/create", request, SerializerOptions, ct);
         response.EnsureSuccessStatusCode();
 
-        var body = await response.Content.ReadAsStringAsync(ct);
-        
-        return JsonSerializer.Deserialize<BookingDetailsResponse>(body) 
-               ?? throw new InvalidOperationException("Received an empty booking confirmation from the server.");
+        var confirmation = await response.Content.ReadFromJsonAsync<BookingDetailsResponse>(SerializerOptions, ct);
+        return confirmation ?? throw new InvalidOperationException("Received an empty booking confirmation from the server.");
     }
 }

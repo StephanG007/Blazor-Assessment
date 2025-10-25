@@ -7,7 +7,7 @@ using Contracts.Users;
 
 namespace UI.Services;
 
-public class UsersApiClient(HttpClient http, AuthState authState)
+public sealed class UsersApiClient(HttpClient http, AuthState authState)
 {
     private readonly HttpClient _http = http;
     private readonly AuthState _authState = authState;
@@ -16,9 +16,7 @@ public class UsersApiClient(HttpClient http, AuthState authState)
     {
         var currentUser = _authState.CurrentUser;
         if (currentUser is null || string.IsNullOrWhiteSpace(currentUser.Token))
-        {
-            return Array.Empty<UserListResponse>();
-        }
+            return [];
 
         using var request = new HttpRequestMessage(HttpMethod.Get, "api/users?requireTotalCount=false");
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", currentUser.Token);
@@ -26,15 +24,13 @@ public class UsersApiClient(HttpClient http, AuthState authState)
         using var response = await _http.SendAsync(request, cancellationToken);
 
         if (response.StatusCode is HttpStatusCode.Unauthorized or HttpStatusCode.Forbidden)
-        {
             throw new UnauthorizedAccessException("You are not authorised to view the users list.");
-        }
 
         response.EnsureSuccessStatusCode();
 
-        var payload = await response.Content.ReadFromJsonAsync<UsersLoadEnvelope>(cancellationToken: cancellationToken);
+        var payload = await response.Content.ReadFromJsonAsync<UsersLoadEnvelope>(cancellationToken);
 
-        return payload?.Data ?? Array.Empty<UserListResponse>();
+        return payload?.Data ?? [];
     }
 
     private sealed class UsersLoadEnvelope

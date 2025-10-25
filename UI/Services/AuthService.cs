@@ -1,11 +1,10 @@
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
-using System.Text.Json;
 using Contracts.Account;
 
 namespace UI.Services;
 
-public class AuthService(HttpClient httpClient, AuthState authState)
+public sealed class AuthService(HttpClient httpClient, AuthState authState)
 {
     public async Task<(bool Success, string? Error)> LoginAsync(string email, string password, CancellationToken ct = default)
     {
