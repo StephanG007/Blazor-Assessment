@@ -1,9 +1,8 @@
 @page "/users"
-@using UI.Services
+@using Contracts.Users
 @inject AuthState AuthState
-@inject HttpClient Http
-@inject IJSRuntime JS
-@implements IAsyncDisposable
+@inject UsersApiClient UsersClient
+@implements IDisposable
 
 <PageTitle>User directory</PageTitle>
 
@@ -21,7 +20,40 @@
         else
         {
             <div class="grid-container">
-                <div @ref="_gridElement" class="users-grid"></div>
+                @if (_isLoading)
+                {
+                    <div class="grid-loading">
+                        <div class="dx-loadindicator"></div>
+                        <span>Loading users...</span>
+                    </div>
+                }
+                else if (_users.Count == 0 && string.IsNullOrEmpty(_loadError))
+                {
+                    <div class="dx-alert dx-alert-warning">No users were returned from the server.</div>
+                }
+                else
+                {
+                    <DxDataGrid Data="_users"
+                                KeyFieldName="Id"
+                                PageSize="10"
+                                ShowFilterRow="true"
+                                ShowGroupPanel="false"
+                                ShowColumnLines="false"
+                                ShowRowAlternation="true"
+                                CssClass="users-grid">
+                        <Pager AllowedPageSizes="@(new[] { 10, 20, 50 })" ShowAllButton="false" />
+                        <Columns>
+                            <DxDataGridColumn FieldName="DisplayName" Caption="Name" />
+                            <DxDataGridColumn FieldName="Region" Caption="Region" />
+                            <DxDataGridColumn FieldName="Country" Caption="Country" />
+                            <DxDataGridColumn FieldName="Gender" Caption="Gender">
+                                <CellDisplayTemplate Context="cellContext">
+                                    @FormatGender(cellContext.DataItem)
+                                </CellDisplayTemplate>
+                            </DxDataGridColumn>
+                        </Columns>
+                    </DxDataGrid>
+                }
             </div>
         }
 
@@ -33,10 +65,10 @@
 </div>
 
 @code {
-    private ElementReference _gridElement;
-    private IJSObjectReference? _usersModule;
+    private readonly List<UserListResponse> _users = [];
+    private CancellationTokenSource? _loadCts;
     private string? _loadError;
-    private bool _shouldRefreshGrid = true;
+    private bool _isLoading;
 
     private bool IsAuthenticated => AuthState.CurrentUser is not null;
 
@@ -45,93 +77,85 @@
         AuthState.StateChanged += HandleAuthStateChanged;
     }
 
-    protected override async Task OnAfterRenderAsync(bool firstRender)
+    protected override async Task OnInitializedAsync()
     {
-        if (firstRender)
-        {
-            _usersModule = await JS.InvokeAsync<IJSObjectReference>("import", "./js/users.js");
-        }
+        await LoadUsersAsync();
+    }
 
-        if (_usersModule is null)
+    private async Task LoadUsersAsync()
+    {
+        _loadCts?.Cancel();
+        _loadCts?.Dispose();
+        _loadCts = null;
+
+        _loadError = null;
+
+        if (!IsAuthenticated)
         {
+            _users.Clear();
+            _isLoading = false;
+            await InvokeAsync(StateHasChanged);
             return;
         }
 
-        if (firstRender || _shouldRefreshGrid)
+        _isLoading = true;
+        await InvokeAsync(StateHasChanged);
+
+        var cancellationSource = new CancellationTokenSource();
+        _loadCts = cancellationSource;
+
+        try
         {
-            _shouldRefreshGrid = false;
+            var users = await UsersClient.GetUsersAsync(cancellationSource.Token);
 
-            await InitializeGridAsync();
-
-            if (!string.IsNullOrEmpty(_loadError))
+            _users.Clear();
+            _users.AddRange(users);
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            _loadError = ex.Message;
+            _users.Clear();
+        }
+        catch (HttpRequestException)
+        {
+            _loadError = "An error occurred while loading users. Please try again.";
+            _users.Clear();
+        }
+        catch (TaskCanceledException)
+        {
+            // Swallow cancellation triggered by a refresh.
+        }
+        finally
+        {
+            if (!cancellationSource.IsCancellationRequested)
             {
+                _isLoading = false;
                 await InvokeAsync(StateHasChanged);
             }
         }
     }
 
-    private void HandleAuthStateChanged()
+    private async void HandleAuthStateChanged()
     {
-        _shouldRefreshGrid = true;
-        InvokeAsync(StateHasChanged);
+        await InvokeAsync(async () =>
+        {
+            await LoadUsersAsync();
+            StateHasChanged();
+        });
     }
 
-    private async Task InitializeGridAsync()
+    private static string FormatGender(UserListResponse user) => user.Gender switch
     {
-        if (_usersModule is null)
-        {
-            return;
-        }
+        1 => "Female",
+        0 => "Male",
+        _ => "Unspecified"
+    };
 
-        _loadError = null;
-
-        try
-        {
-            await _usersModule.InvokeVoidAsync("disposeUsersGrid");
-
-            if (!IsAuthenticated)
-            {
-                return;
-            }
-
-            var apiBaseUrl = Http.BaseAddress?.ToString();
-            var accessToken = AuthState.CurrentUser?.Token;
-
-            if (string.IsNullOrWhiteSpace(apiBaseUrl) || string.IsNullOrWhiteSpace(accessToken))
-            {
-                _loadError = "Unable to determine the API endpoint for loading users.";
-                return;
-            }
-
-            await _usersModule.InvokeVoidAsync(
-                "initializeUsersGrid",
-                _gridElement,
-                new
-                {
-                    apiBaseUrl,
-                    accessToken
-                });
-        }
-        catch (JSException ex)
-        {
-            _loadError = ex.Message;
-        }
-    }
-
-    public async ValueTask DisposeAsync()
+    public void Dispose()
     {
         AuthState.StateChanged -= HandleAuthStateChanged;
-
-        if (_usersModule is not null)
-        {
-            try
-            {
-                await _usersModule.InvokeVoidAsync("disposeUsersGrid");
-            }
-            finally
-            {
-                await _usersModule.DisposeAsync();
-            }
-        }
+        _loadCts?.Cancel();
+        _loadCts?.Dispose();
+        _loadCts = null;
     }
 }

@@ -13,5 +13,7 @@ builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(apiBaseU
 builder.Services.AddScoped<AuthState>();
 builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<BookingApiClient>();
+builder.Services.AddDevExpressBlazor();
+builder.Services.AddScoped<UsersApiClient>();
 
 await builder.Build().RunAsync();
