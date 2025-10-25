@@ -135,14 +135,7 @@
         }
     }
 
-    private async void HandleAuthStateChanged()
-    {
-        await InvokeAsync(async () =>
-        {
-            await LoadUsersAsync();
-            StateHasChanged();
-        });
-    }
+    private void HandleAuthStateChanged() => _ = InvokeAsync(LoadUsersAsync);
 
     private static string FormatGender(UserListResponse user) => user.Gender switch
     {

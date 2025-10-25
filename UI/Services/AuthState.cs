@@ -2,7 +2,7 @@ using Contracts.Account;
 
 namespace UI.Services;
 
-public class AuthState
+public sealed class AuthState
 {
     private LoginResponse? _currentUser;
 

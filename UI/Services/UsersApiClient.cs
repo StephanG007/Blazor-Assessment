@@ -7,7 +7,7 @@ using Contracts.Users;
 
 namespace UI.Services;
 
-public class UsersApiClient(HttpClient http, AuthState authState)
+public sealed class UsersApiClient(HttpClient http, AuthState authState)
 {
     private readonly HttpClient _http = http;
     private readonly AuthState _authState = authState;
