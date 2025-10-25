@@ -1,0 +1,137 @@
+@page "/users"
+@using UI.Services
+@inject AuthState AuthState
+@inject HttpClient Http
+@inject IJSRuntime JS
+@implements IAsyncDisposable
+
+<PageTitle>User directory</PageTitle>
+
+<div class="users-page">
+    <div class="dx-card users-card">
+        <h1 class="page-title">User directory</h1>
+        <p class="page-lead">Browse the registered users and their profile details.</p>
+
+        @if (!IsAuthenticated)
+        {
+            <div class="dx-alert dx-alert-info">
+                Sign in with an administrator account to view the users list.
+            </div>
+        }
+        else
+        {
+            <div class="grid-container">
+                <div @ref="_gridElement" class="users-grid"></div>
+            </div>
+        }
+
+        @if (!string.IsNullOrEmpty(_loadError))
+        {
+            <div class="dx-alert dx-alert-danger">@_loadError</div>
+        }
+    </div>
+</div>
+
+@code {
+    private ElementReference _gridElement;
+    private IJSObjectReference? _usersModule;
+    private string? _loadError;
+    private bool _shouldRefreshGrid = true;
+
+    private bool IsAuthenticated => AuthState.CurrentUser is not null;
+
+    protected override void OnInitialized()
+    {
+        AuthState.StateChanged += HandleAuthStateChanged;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            _usersModule = await JS.InvokeAsync<IJSObjectReference>("import", "./js/users.js");
+        }
+
+        if (_usersModule is null)
+        {
+            return;
+        }
+
+        if (firstRender || _shouldRefreshGrid)
+        {
+            _shouldRefreshGrid = false;
+
+            await InitializeGridAsync();
+
+            if (!string.IsNullOrEmpty(_loadError))
+            {
+                await InvokeAsync(StateHasChanged);
+            }
+        }
+    }
+
+    private void HandleAuthStateChanged()
+    {
+        _shouldRefreshGrid = true;
+        InvokeAsync(StateHasChanged);
+    }
+
+    private async Task InitializeGridAsync()
+    {
+        if (_usersModule is null)
+        {
+            return;
+        }
+
+        _loadError = null;
+
+        try
+        {
+            await _usersModule.InvokeVoidAsync("disposeUsersGrid");
+
+            if (!IsAuthenticated)
+            {
+                return;
+            }
+
+            var apiBaseUrl = Http.BaseAddress?.ToString();
+            var accessToken = AuthState.CurrentUser?.Token;
+
+            if (string.IsNullOrWhiteSpace(apiBaseUrl) || string.IsNullOrWhiteSpace(accessToken))
+            {
+                _loadError = "Unable to determine the API endpoint for loading users.";
+                return;
+            }
+
+            await _usersModule.InvokeVoidAsync(
+                "initializeUsersGrid",
+                _gridElement,
+                new
+                {
+                    apiBaseUrl,
+                    accessToken
+                });
+        }
+        catch (JSException ex)
+        {
+            _loadError = ex.Message;
+        }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        AuthState.StateChanged -= HandleAuthStateChanged;
+
+        if (_usersModule is not null)
+        {
+            try
+            {
+                await _usersModule.InvokeVoidAsync("disposeUsersGrid");
+            }
+            finally
+            {
+                await _usersModule.DisposeAsync();
+            }
+        }
+    }
+}

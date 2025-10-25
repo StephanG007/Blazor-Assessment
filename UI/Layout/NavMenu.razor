@@ -1,3 +1,7 @@
+@using UI.Services
+@inject AuthState AuthState
+@implements IDisposable
+
 <nav class="nav-menu">
     <ul class="dx-list dx-list-select-decorator">
         <li class="dx-list-item">
@@ -6,5 +10,33 @@
                 <span class="nav-text">Book appointment</span>
             </NavLink>
         </li>
+        @if (IsAuthenticated)
+        {
+            <li class="dx-list-item">
+                <NavLink class="dx-list-item-content nav-link" href="/users">
+                    <span class="dx-icon dx-icon-user"></span>
+                    <span class="nav-text">Users</span>
+                </NavLink>
+            </li>
+        }
     </ul>
 </nav>
+
+@code {
+    private bool IsAuthenticated => AuthState.CurrentUser is not null;
+
+    protected override void OnInitialized()
+    {
+        AuthState.StateChanged += HandleStateChanged;
+    }
+
+    private void HandleStateChanged()
+    {
+        InvokeAsync(StateHasChanged);
+    }
+
+    public void Dispose()
+    {
+        AuthState.StateChanged -= HandleStateChanged;
+    }
+}
