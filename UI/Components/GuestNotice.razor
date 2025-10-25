@@ -1,0 +1,28 @@
+@using UI.Services
+@inject AuthState AuthState
+@implements IDisposable
+
+@if (AuthState.CurrentUser is null)
+{
+    <div class="dx-alert dx-alert-info guest-notice">
+        <strong>You're browsing as a guest.</strong>
+        Log in to book faster and unlock available appointment slots.
+    </div>
+}
+
+@code {
+    protected override void OnInitialized()
+    {
+        AuthState.StateChanged += OnStateChanged;
+    }
+
+    private void OnStateChanged()
+    {
+        _ = InvokeAsync(StateHasChanged);
+    }
+
+    public void Dispose()
+    {
+        AuthState.StateChanged -= OnStateChanged;
+    }
+}
