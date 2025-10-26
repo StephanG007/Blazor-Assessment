@@ -1,5 +1,6 @@
 .booking-page {
-    padding: clamp(0.5rem, 1vw, 1.5rem) 0 4rem;
+    padding: clamp(1.25rem, 2vw, 2.5rem) clamp(1rem, 3vw, 3rem) 4rem;
+    row-gap: clamp(1.5rem, 2.5vw, 3rem);
 }
 
 .booking-hero {
@@ -23,8 +24,28 @@
     color: rgba(28, 27, 31, 0.68);
 }
 
+.booking-hero__chips {
+    width: 100%;
+}
+
+.booking-hero__chip {
+    display: flex;
+    width: 100%;
+    justify-content: flex-start;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.booking-hero__chip :deep(.mud-chip-content) {
+    width: 100%;
+}
+
+.booking-hero__chip-icon {
+    margin-right: 0.25rem;
+}
+
 .booking-grid {
-    margin-top: 0.5rem;
+    margin-top: clamp(1.25rem, 2vw, 2.25rem);
 }
 
 .booking-panel {
@@ -33,10 +54,15 @@
     background: linear-gradient(180deg, rgba(255, 255, 255, 0.82) 0%, rgba(255, 255, 255, 0.95) 100%);
     box-shadow: 0 20px 40px rgba(32, 31, 69, 0.06);
     border: 1px solid rgba(103, 80, 164, 0.08);
+    width: 100%;
 }
 
 .booking-panel--clinics {
     backdrop-filter: blur(8px);
+}
+
+.booking-panel--availability {
+    min-height: clamp(28rem, 70vh, 52rem);
 }
 
 @media (max-width: 959.95px) {
