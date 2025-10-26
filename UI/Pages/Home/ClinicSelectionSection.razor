@@ -1,0 +1,76 @@
+@using Contracts.Clinics
+
+<section class="clinic-section">
+    <header class="section-heading">
+        <h2 class="section-title">Clinics</h2>
+        <p class="section-caption">Select a clinic to view available slots.</p>
+    </header>
+    <GuestNotice />
+
+    <DxListBox TData="ClinicSummaryDto"
+               TValue="int?"
+               Data="@Clinics"
+               CssClass="clinic-list"
+               SelectionMode="ListBoxSelectionMode.Single"
+               ValueFieldName="Id"
+               Value="@SelectedClinicId"
+               ValueChanged="SelectedClinicIdChanged"
+               Enabled="@(!IsSubmitting)">
+        <ItemTemplate Context="clinic">
+            <article class="clinic-card">
+                <div class="clinic-card-header">
+                    <span class="clinic-name">@clinic.Name</span>
+                </div>
+                <span class="clinic-location">@FormatLocation(clinic.City, clinic.Province)</span>
+                @if (SelectedClinicId == clinic.Id)
+                {
+                    <span class="clinic-status">@SelectedClinicStatus</span>
+                }
+                else
+                {
+                    <span class="clinic-hint">View availability for @SelectedDateShort</span>
+                }
+            </article>
+        </ItemTemplate>
+    </DxListBox>
+</section>
+
+@code {
+    [Parameter, EditorRequired]
+    public IReadOnlyList<ClinicSummaryDto> Clinics { get; set; } = Array.Empty<ClinicSummaryDto>();
+
+    [Parameter]
+    public int? SelectedClinicId { get; set; }
+
+    [Parameter]
+    public EventCallback<int?> SelectedClinicIdChanged { get; set; }
+
+    [Parameter]
+    public bool IsSubmitting { get; set; }
+
+    [Parameter]
+    public string SelectedDateShort { get; set; } = string.Empty;
+
+    [Parameter]
+    public string SelectedClinicStatus { get; set; } = string.Empty;
+
+    private static string FormatLocation(string? city, string? province)
+    {
+        if (string.IsNullOrWhiteSpace(city) && string.IsNullOrWhiteSpace(province))
+        {
+            return "Location to be confirmed";
+        }
+
+        if (string.IsNullOrWhiteSpace(city))
+        {
+            return province!;
+        }
+
+        if (string.IsNullOrWhiteSpace(province))
+        {
+            return city!;
+        }
+
+        return $"{city}, {province}";
+    }
+}

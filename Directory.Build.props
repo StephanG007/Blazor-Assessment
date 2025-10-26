@@ -1,0 +1,40 @@
+<Project>
+
+  <PropertyGroup>
+    <!-- Language & build hygiene -->
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <Deterministic>true</Deterministic>
+    <ContinuousIntegrationBuild>true</ContinuousIntegrationBuild>
+
+    <!-- Analyzer & style enforcement -->
+    <AnalysisLevel>latest</AnalysisLevel>
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+
+    <!-- Treat most warnings as errors to keep PRs clean -->
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+
+    <!-- If you want some warnings to *not* fail the build, list them here -->
+    <!-- Example set below is pragmatic for libraries/apps; tune as you like -->
+    <WarningsNotAsErrors>
+      CS1591;  <!-- missing XML docs -->
+      CS1573;  <!-- missing param docs -->
+      CA1707;  <!-- underscores in identifiers -->
+      CA1056;  <!-- string URI members -->
+      CA1054;  <!-- string URI parameters -->
+      CA1055;  <!-- string URI return values -->
+      CA1305;  <!-- IFormatProvider overloads -->
+      CA1303;  <!-- Do not pass literals as localized params -->
+      CA1848;  <!-- LoggerMessage pattern suggestion -->
+    </WarningsNotAsErrors>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- .NET analyzers as a private dependency so all projects get the same rules -->
+    <PackageReference Include="Microsoft.CodeAnalysis.NetAnalyzers"
+                      Version="9.0.0"
+                      PrivateAssets="all"
+                      IncludeAssets="runtime; build; native; contentfiles; analyzers; buildtransitive" />
+  </ItemGroup>
+
+</Project>

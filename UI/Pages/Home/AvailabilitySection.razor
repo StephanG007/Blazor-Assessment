@@ -1,0 +1,105 @@
+@using Contracts.Bookings
+@using UI.Pages
+
+<section class="availability-section">
+    <div class="availability-toolbar">
+        <div class="availability-heading">
+            <div class="availability-title">@SelectedClinicHeading</div>
+            <div class="availability-subtitle">@SelectedClinicSubtitle</div>
+            <div class="availability-date">@SelectedDateLong</div>
+        </div>
+        <div class="date-picker" aria-label="Select appointment date">
+            <span class="date-picker-icon" aria-hidden="true">📅</span>
+            <DxDateEdit @bind-Date="SelectedDateValue"
+                       MinDate="@DateTime.Today"
+                       DisplayFormat="dddd, dd MMMM yyyy"
+                       CssClass="date-picker-editor"
+                       Enabled="@(!IsSubmitting)" />
+        </div>
+    </div>
+
+    @if (IsLoadingAvailability)
+    {
+        <div class="loading-inline">
+            <DxLoadIndicator CssClass="loading-indicator small" />
+            <span>Checking availability...</span>
+        </div>
+    }
+
+    @if (!string.IsNullOrEmpty(AvailabilityError))
+    {
+        <div class="dx-alert dx-alert-warning">@AvailabilityError</div>
+    }
+    else if (!IsLoadingAvailability && AvailableSlots.Count == 0)
+    {
+        <div class="dx-alert dx-alert-info">Select a different date to see more availability.</div>
+    }
+
+    <DxListBox TData="AvailableSlotResponse"
+               TValue="int?"
+               Data="@AvailableSlots"
+               CssClass="slot-list"
+               SelectionMode="ListBoxSelectionMode.Single"
+               ValueFieldName="Id"
+               Value="@SelectedSlotId"
+               ValueChanged="SelectedSlotChanged"
+               Enabled="@(!(IsLoadingAvailability || IsSubmitting))">
+        <ItemTemplate Context="slot">
+            <div class="slot-pill">@FormatSlot(slot)</div>
+        </ItemTemplate>
+    </DxListBox>
+</section>
+
+@code {
+    [Parameter]
+    public string SelectedClinicHeading { get; set; } = string.Empty;
+
+    [Parameter]
+    public string SelectedClinicSubtitle { get; set; } = string.Empty;
+
+    [Parameter]
+    public string SelectedDateLong { get; set; } = string.Empty;
+
+    [Parameter]
+    public DateTime SelectedDate { get; set; }
+
+    [Parameter]
+    public EventCallback<DateTime> SelectedDateChanged { get; set; }
+
+    [Parameter]
+    public bool IsSubmitting { get; set; }
+
+    [Parameter]
+    public bool IsLoadingAvailability { get; set; }
+
+    [Parameter]
+    public string? AvailabilityError { get; set; }
+
+    [Parameter, EditorRequired]
+    public IReadOnlyList<AvailableSlotResponse> AvailableSlots { get; set; } = Array.Empty<AvailableSlotResponse>();
+
+    [Parameter]
+    public int? SelectedSlotId { get; set; }
+
+    [Parameter]
+    public EventCallback<int?> SelectedSlotChanged { get; set; }
+
+    [Parameter]
+    public Func<AvailableSlotResponse, string>? SlotFormatter { get; set; }
+
+    private DateTime SelectedDateValue
+    {
+        get => SelectedDate;
+        set => SelectedDateChanged.InvokeAsync(value);
+    }
+
+    private string FormatSlot(AvailableSlotResponse slot)
+    {
+        if (SlotFormatter is not null)
+        {
+            return SlotFormatter(slot);
+        }
+
+        return HomePage.FormatSlotRange(slot);
+    }
+}
