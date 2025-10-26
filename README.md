@@ -21,7 +21,7 @@ The purpose of this README is to help **Codex** understand:
 
 Key libraries:
 - **Entity Framework Core** for persistence
-- **DevExpress / DevExtreme** for UI
+- **MudBlazor** for UI
 - **JWT authentication**
 - **xUnit + Moq** for testing
 
