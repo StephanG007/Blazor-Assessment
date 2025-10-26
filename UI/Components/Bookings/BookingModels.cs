@@ -45,7 +45,7 @@ public sealed record ClinicSummary(
     }
 }
 
-public sealed record TimeSlotOption(TimeOnly StartTime, bool IsReserved = false)
+public sealed record TimeSlotOption(int Id, TimeOnly StartTime, TimeOnly EndTime, bool IsReserved = false)
 {
     public string DisplayLabel => StartTime.ToString("HH:mm");
 }

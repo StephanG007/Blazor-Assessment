@@ -1,7 +1,9 @@
+using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using Contracts.Bookings;
 using Contracts.Clinics;
+using Microsoft.AspNetCore.Mvc;
 
 namespace UI.Services;
 
@@ -23,9 +25,36 @@ public sealed class BookingApiClient(HttpClient httpClient)
     public async Task<BookingDetailsResponse> CreateBookingAsync(BookingRequest request, CancellationToken ct = default)
     {
         using var response = await httpClient.PostAsJsonAsync("api/booking/create", request, SerializerOptions, ct);
-        response.EnsureSuccessStatusCode();
 
-        var confirmation = await response.Content.ReadFromJsonAsync<BookingDetailsResponse>(SerializerOptions, ct);
-        return confirmation ?? throw new InvalidOperationException("Received an empty booking confirmation from the server.");
+        if (response.IsSuccessStatusCode)
+        {
+            var confirmation = await response.Content.ReadFromJsonAsync<BookingDetailsResponse>(SerializerOptions, ct);
+            return confirmation ?? throw new InvalidOperationException("Received an empty booking confirmation from the server.");
+        }
+
+        ProblemDetails? problem = null;
+
+        try
+        {
+            problem = await response.Content.ReadFromJsonAsync<ProblemDetails>(SerializerOptions, ct);
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch
+        {
+            // Ignore parsing failures and fall back to a generic message
+        }
+
+        var message = problem?.Detail;
+        if (string.IsNullOrWhiteSpace(message))
+        {
+            message = problem?.Title;
+        }
+
+        message ??= "We couldn't complete your booking right now. Please try again soon.";
+
+        throw new BookingRequestException(message, response.StatusCode);
     }
 }

@@ -69,7 +69,7 @@
                                              Disabled="@slot.IsReserved"
                                              Ripple="@(!slot.IsReserved)"
                                              Selected="@IsSelected(day.Date, slot)"
-                                             OnClick="() => HandleSelection(day.Date, slot)">
+                                            OnClick="async () => await HandleSelection(day.Date, slot)">
                                         @slot.DisplayLabel
                                     </MudChip>
                                 }
@@ -158,7 +158,7 @@
 
     private bool IsSelected(DateOnly date, TimeSlotOption slot) => SelectedSlot is not null
         && SelectedSlot.Date == date
-        && SelectedSlot.Slot.StartTime == slot.StartTime;
+        && SelectedSlot.Slot.Id == slot.Id;
 
     private bool IsDaySelected(DateOnly date) => SelectedSlot?.Date == date;
 
@@ -188,7 +188,7 @@
 
         if (SelectedSlot is not null
             && SelectedSlot.Date == date
-            && SelectedSlot.Slot.StartTime == slot.StartTime)
+            && SelectedSlot.Slot.Id == slot.Id)
         {
             return SelectedSlotChanged.InvokeAsync(null);
         }
