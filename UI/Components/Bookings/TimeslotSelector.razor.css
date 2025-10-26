@@ -7,6 +7,12 @@
     gap: 1rem;
 }
 
+.timeslot-header__content {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
 .timeslot-title {
     font-weight: 600;
 }
@@ -40,6 +46,18 @@
 
 .timeslot-day__avatar {
     box-shadow: 0 10px 24px rgba(94, 137, 255, 0.25);
+}
+
+.timeslot-day__stack {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+}
+
+.timeslot-day__header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
 }
 
 .timeslot-day__title {

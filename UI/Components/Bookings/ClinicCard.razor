@@ -2,20 +2,22 @@
 
 <MudCard Class="@CardClass" Elevation="@(Selected ? 10 : 3)" @onclick="HandleClick">
     <MudCardContent Class="clinic-card__content">
-        <MudStack Spacing="1.25">
-            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
-                <MudAvatar Icon="@Icons.Material.Filled.HealthAndSafety"
-                           Size="Size.Small"
+        <MudStack Class="clinic-card__stack">
+            <MudStack Row="true" AlignItems="AlignItems.Center" Class="clinic-card__header">
+                <MudAvatar Size="Size.Small"
                            Color="Color.Primary"
                            Variant="Variant.Filled"
-                           Class="clinic-card__badge" />
+                           Class="clinic-card__badge">
+                    <MudIcon Icon="@Icons.Material.Filled.HealthAndSafety" />
+                </MudAvatar>
                 <MudText Typo="Typo.h6" Class="clinic-card__title">@Clinic.Name</MudText>
             </MudStack>
-            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="0.75" Class="clinic-card__location">
+            <MudStack Row="true" AlignItems="AlignItems.Center" Class="clinic-card__location">
                 <MudIcon Icon="@Icons.Material.Filled.Place" Size="Size.Small" />
                 <MudText Typo="Typo.subtitle2">@Clinic.DisplayLocation</MudText>
             </MudStack>
-            <MudChip Color="Color.Secondary"
+            <MudChip T="string"
+                     Color="Color.Secondary"
                      Variant="Variant.Outlined"
                      Class="slot-summary"
                      StartIcon="@Icons.Material.Filled.Schedule">

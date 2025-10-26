@@ -30,18 +30,6 @@ public static class AppTheme
         {
             DefaultBorderRadius = "18px",
             DrawerWidthLeft = "280px"
-        },
-        Typography = new Typography
-        {
-            Default = new Default
-            {
-                FontFamily = new[] { "'Inter'", "'Segoe UI'", "sans-serif" },
-                FontSize = "0.95rem"
-            },
-            H5 = new H5 { FontWeight = 600, LetterSpacing = "0.01em" },
-            H6 = new H6 { FontWeight = 600, LetterSpacing = "0.01em" },
-            Subtitle1 = new Subtitle1 { FontWeight = 600 },
-            Subtitle2 = new Subtitle2 { FontWeight = 500 }
         }
     };
 }

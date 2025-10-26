@@ -22,6 +22,18 @@
     width: 100%;
 }
 
+.clinic-card__stack {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+}
+
+.clinic-card__header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
 .clinic-card__badge {
     box-shadow: 0 10px 22px rgba(103, 80, 164, 0.24);
 }
@@ -31,6 +43,9 @@
 }
 
 .clinic-card__location {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
     color: rgba(28, 27, 31, 0.6);
 }
 
