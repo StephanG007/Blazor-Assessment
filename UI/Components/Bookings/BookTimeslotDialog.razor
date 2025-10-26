@@ -1,0 +1,165 @@
+@namespace UI.Components.Bookings
+@using System
+@using System.Threading
+@using System.Threading.Tasks
+@using Contracts.Bookings
+@using UI.Services
+@using MudBlazor
+@implements IDisposable
+
+@inject BookingApiClient BookingApiClient
+@inject AuthState AuthState
+
+<DialogContent>
+    <MudStack Spacing="3">
+        <MudStack>
+            <MudText Typo="Typo.h6">Confirm your booking</MudText>
+            <MudText Typo="Typo.body2">Review the appointment details and complete the required patient information.</MudText>
+        </MudStack>
+
+        <MudPaper Elevation="1" Class="pa-4">
+            <MudStack Spacing="1">
+                <MudText Typo="Typo.subtitle1">@Clinic.Name</MudText>
+                <MudText Typo="Typo.body2">@Clinic.DisplayLocation</MudText>
+                <MudText Typo="Typo.body2">@AppointmentDate</MudText>
+                <MudText Typo="Typo.body2">@AppointmentWindow</MudText>
+            </MudStack>
+        </MudPaper>
+
+        @if (!string.IsNullOrWhiteSpace(_error))
+        {
+            <MudAlert Severity="Severity.Error" Elevation="0">@_error</MudAlert>
+        }
+
+        @if (_isSubmitting)
+        {
+            <MudProgressLinear Color="Color.Primary" Indeterminate="true" />
+        }
+
+        <MudForm @ref="_form">
+            <MudStack Spacing="2">
+                <MudTextField @bind-Value="_request.PatientName"
+                              Label="Patient name"
+                              For="@(() => _request.PatientName)"
+                              Required="true"
+                              Disabled="_isSubmitting"
+                              Immediate="true"
+                              Variant="Variant.Outlined" />
+
+                <MudTextField @bind-Value="_request.PatientEmail"
+                              Label="Patient email"
+                              For="@(() => _request.PatientEmail)"
+                              Required="true"
+                              Disabled="_isSubmitting"
+                              Immediate="true"
+                              InputType="InputType.Email"
+                              Variant="Variant.Outlined" />
+
+                <MudTextField @bind-Value="_request.Notes"
+                              Label="Notes (optional)"
+                              For="@(() => _request.Notes)"
+                              Disabled="_isSubmitting"
+                              Variant="Variant.Outlined"
+                              Lines="3"
+                              TextArea="true" />
+            </MudStack>
+        </MudForm>
+    </MudStack>
+</DialogContent>
+
+<DialogActions>
+    <MudButton Variant="Variant.Text" Color="Color.Secondary" Disabled="_isSubmitting" OnClick="Cancel">Cancel</MudButton>
+    <MudButton Variant="Variant.Filled" Color="Color.Primary" Disabled="_isSubmitting" OnClick="SubmitAsync">Book slot</MudButton>
+</DialogActions>
+
+@code {
+    [CascadingParameter]
+    private IDialogReference DialogReference { get; set; } = default!;
+
+    [Parameter, EditorRequired]
+    public ClinicSummary Clinic { get; set; } = default!;
+
+    [Parameter, EditorRequired]
+    public ScheduledSlot Slot { get; set; } = default!;
+
+    private readonly CancellationTokenSource _cts = new();
+    private MudForm? _form;
+    private BookingRequest _request = new();
+    private bool _isSubmitting;
+    private string? _error;
+
+    private string AppointmentDate => Slot.Date.ToDateTime(TimeOnly.MinValue).ToString("dddd, MMM d, yyyy");
+    private string AppointmentWindow => $"{Slot.Slot.StartTime:HH\\:mm} - {Slot.Slot.EndTime:HH\\:mm}";
+
+    protected override void OnInitialized()
+    {
+        if (Clinic is null)
+        {
+            throw new InvalidOperationException("A clinic must be supplied to book a timeslot.");
+        }
+
+        if (Slot is null)
+        {
+            throw new InvalidOperationException("A slot must be supplied to book a timeslot.");
+        }
+
+        _request = new BookingRequest
+        {
+            ClinicId = Clinic.Id,
+            AppointmentSlotId = Slot.Slot.Id,
+            PatientName = AuthState.CurrentUser?.DisplayName ?? string.Empty,
+            PatientEmail = AuthState.CurrentUser?.Email ?? string.Empty
+        };
+    }
+
+    private async Task SubmitAsync()
+    {
+        if (_form is null)
+        {
+            return;
+        }
+
+        await _form.Validate();
+
+        if (!_form.IsValid)
+        {
+            return;
+        }
+
+        _isSubmitting = true;
+        _error = null;
+
+        try
+        {
+            var confirmation = await BookingApiClient.CreateBookingAsync(_request, _cts.Token);
+            DialogReference.Close(DialogResult.Ok(confirmation));
+        }
+        catch (OperationCanceledException)
+        {
+            // Dialog was closed, no action required.
+        }
+        catch (BookingRequestException ex)
+        {
+            _error = ex.Message;
+        }
+        catch
+        {
+            _error = "We couldn't complete your booking right now. Please try again.";
+        }
+        finally
+        {
+            _isSubmitting = false;
+        }
+    }
+
+    private void Cancel()
+    {
+        DialogReference.Close();
+    }
+
+    public void Dispose()
+    {
+        _cts.Cancel();
+        _cts.Dispose();
+    }
+}

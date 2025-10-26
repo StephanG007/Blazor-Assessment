@@ -41,6 +41,12 @@ public sealed partial class Bookings : ComponentBase, IDisposable
     [Inject]
     private AuthState AuthState { get; set; } = default!;
 
+    [Inject]
+    private IDialogService DialogService { get; set; } = default!;
+
+    [Inject]
+    private ISnackbar Snackbar { get; set; } = default!;
+
     protected override void OnInitialized()
     {
         AuthState.StateChanged += HandleAuthStateChanged;
@@ -159,9 +165,54 @@ public sealed partial class Bookings : ComponentBase, IDisposable
         await LoadAvailabilityAsync();
     }
 
-    private void HandleSlotChanged(ScheduledSlot? slot)
+    private async Task HandleSlotChanged(ScheduledSlot? slot)
     {
         SelectedSlot = slot;
+
+        if (slot is null || SelectedClinic is null)
+        {
+            await InvokeAsync(StateHasChanged);
+            return;
+        }
+
+        var parameters = new DialogParameters
+        {
+            { nameof(BookTimeslotDialog.Clinic), SelectedClinic },
+            { nameof(BookTimeslotDialog.Slot), slot }
+        };
+
+        var options = new DialogOptions
+        {
+            CloseButton = true,
+            BackdropClick = false,
+            MaxWidth = MaxWidth.Small,
+            FullWidth = true
+        };
+
+        var dialog = await DialogService.ShowAsync<BookTimeslotDialog>("Book appointment", parameters, options);
+
+        DialogResult result;
+        try
+        {
+            result = await dialog.Result ?? DialogResult.Cancel();
+        }
+        catch (TaskCanceledException)
+        {
+            SelectedSlot = null;
+            await InvokeAsync(StateHasChanged);
+            return;
+        }
+
+        if (!result.Canceled && result.Data is BookingDetailsResponse confirmation)
+        {
+            ShowBookingSuccess(confirmation);
+            SelectedSlot = null;
+            await LoadAvailabilityAsync();
+            return;
+        }
+
+        SelectedSlot = null;
+        await InvokeAsync(StateHasChanged);
     }
 
     private static DateRange BuildInitialRange() => new(
@@ -172,7 +223,7 @@ public sealed partial class Bookings : ComponentBase, IDisposable
     {
         Clinics = Array.Empty<ClinicSummary>();
         SelectedClinic = null;
-        SelectedRange = new();
+        SelectedRange = new DateRange();
         SelectedSlot = null;
     }
 
@@ -206,7 +257,7 @@ public sealed partial class Bookings : ComponentBase, IDisposable
 
         IsLoadingAvailability = true;
         AvailabilityError = null;
-        _currentAvailability = Array.Empty<DailyAvailability>();
+        _currentAvailability = [];
         _currentAvailabilityClinicId = null;
 
         await InvokeAsync(StateHasChanged);
@@ -289,7 +340,11 @@ public sealed partial class Bookings : ComponentBase, IDisposable
                 group.Key,
                 group
                     .OrderBy(slot => slot.StartTime)
-                    .Select(slot => new TimeSlotOption(TimeOnly.FromDateTime(slot.StartTime), slot.IsReserved))
+                    .Select(slot => new TimeSlotOption(
+                        slot.Id,
+                        TimeOnly.FromDateTime(slot.StartTime),
+                        TimeOnly.FromDateTime(slot.EndTime),
+                        slot.IsReserved))
                     .ToList()))
             .ToList();
     }
@@ -326,7 +381,7 @@ public sealed partial class Bookings : ComponentBase, IDisposable
             return;
         }
 
-        var slot = day.Slots.FirstOrDefault(s => s.StartTime == SelectedSlot.Slot.StartTime && !s.IsReserved);
+        var slot = day.Slots.FirstOrDefault(s => s.Id == SelectedSlot.Slot.Id && !s.IsReserved);
         if (slot is null)
         {
             SelectedSlot = null;
@@ -335,6 +390,12 @@ public sealed partial class Bookings : ComponentBase, IDisposable
         {
             SelectedSlot = new ScheduledSlot(SelectedSlot.Date, slot);
         }
+    }
+
+    private void ShowBookingSuccess(BookingDetailsResponse confirmation)
+    {
+        var formatted = confirmation.StartTime.ToString("dddd, MMM d 'at' HH:mm");
+        Snackbar.Add($"Appointment confirmed for {formatted} at {confirmation.ClinicName}.", Severity.Success);
     }
 
     private void EnsureRangeInitialized(IReadOnlyList<DailyAvailability> availability)
