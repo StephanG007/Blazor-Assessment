@@ -26,9 +26,7 @@
     @if (TimeSlots?.Count > 0)
     {
         <MudChipSet T="TimeSlotOption"
-                    Class="timeslot-chipset"
-                    Mandatory="false"
-                    MultiSelection="false">
+                    Class="timeslot-chipset">
             @foreach (var slot in TimeSlots)
             {
                 <MudChip T="TimeSlotOption"
