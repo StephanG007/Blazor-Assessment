@@ -80,3 +80,14 @@
     font-weight: 600;
     border-radius: 14px;
 }
+
+.timeslot-chip--reserved {
+    border-color: rgba(211, 47, 47, 0.45);
+    background: rgba(229, 57, 53, 0.12);
+    color: #b71c1c;
+}
+
+.timeslot-chip--reserved.mud-chip.mud-disabled {
+    opacity: 1;
+    cursor: not-allowed;
+}

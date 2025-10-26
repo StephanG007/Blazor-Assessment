@@ -53,7 +53,7 @@ public class BookingServiceTests
     }
 
     [Theory, AutoDbData]
-    public async Task GetAvailableSlotsAsync_returns_active_unbooked_slots_in_order(
+    public async Task GetAvailableSlotsAsync_returns_active_slots_with_booking_status(
         AppDbContext context, IFixture fixture, Clinic clinic)
     {
         // Arrange
@@ -112,8 +112,9 @@ public class BookingServiceTests
         // Assert
         slots.Should().BeEquivalentTo(new[]
         {
-            new AvailableSlotResponse(availableEarly.Id, availableEarly.StartTime, availableEarly.EndTime),
-            new AvailableSlotResponse(availableLate.Id,  availableLate.StartTime,  availableLate.EndTime),
+            new AvailableSlotResponse(availableEarly.Id, availableEarly.StartTime, availableEarly.EndTime, false),
+            new AvailableSlotResponse(bookedSlot.Id,     bookedSlot.StartTime,     bookedSlot.EndTime,     true),
+            new AvailableSlotResponse(availableLate.Id,  availableLate.StartTime,  availableLate.EndTime,  false),
         }, opts => opts.WithStrictOrdering());
     }
 

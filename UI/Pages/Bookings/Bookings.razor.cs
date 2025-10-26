@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
+using Contracts.Bookings;
 using Contracts.Clinics;
 using Microsoft.AspNetCore.Components;
 using MudBlazor;
@@ -12,14 +14,23 @@ namespace UI.Pages.Bookings;
 
 public sealed partial class Bookings : ComponentBase, IDisposable
 {
-    private readonly IReadOnlyDictionary<int, ClinicSchedule> _mockSchedule;
-
     private IReadOnlyList<ClinicSummary> Clinics { get; set; } = Array.Empty<ClinicSummary>();
     private ClinicSummary? SelectedClinic { get; set; }
     private DateRange SelectedRange { get; set; } = new();
     private ScheduledSlot? SelectedSlot { get; set; }
     private bool IsLoadingClinics { get; set; } = true;
+    private bool IsLoadingAvailability { get; set; }
     private string? ClinicsError { get; set; }
+    private string? AvailabilityError { get; set; }
+
+    private IReadOnlyList<DailyAvailability> ClinicAvailability =>
+        SelectedClinic is not null && _currentAvailabilityClinicId == SelectedClinic.Id
+            ? _currentAvailability
+            : Array.Empty<DailyAvailability>();
+
+    private IReadOnlyList<DailyAvailability> _currentAvailability = Array.Empty<DailyAvailability>();
+    private int? _currentAvailabilityClinicId;
+    private CancellationTokenSource? _availabilityCts;
 
     [Inject]
     private BookingApiClient BookingApiClient { get; set; } = default!;
@@ -29,29 +40,6 @@ public sealed partial class Bookings : ComponentBase, IDisposable
 
     [Inject]
     private AuthState AuthState { get; set; } = default!;
-
-    private IReadOnlyList<DailyAvailability> ClinicAvailability
-    {
-        get
-        {
-            if (SelectedClinic is null)
-            {
-                return Array.Empty<DailyAvailability>();
-            }
-
-            if (!_mockSchedule.TryGetValue(SelectedClinic.Id, out var schedule))
-            {
-                return Array.Empty<DailyAvailability>();
-            }
-
-            return schedule.Availability;
-        }
-    }
-
-    public Bookings()
-    {
-        _mockSchedule = BuildMockSchedule();
-    }
 
     protected override void OnInitialized()
     {
@@ -80,6 +68,7 @@ public sealed partial class Bookings : ComponentBase, IDisposable
         SelectedClinic = null;
         SelectedRange = new();
         SelectedSlot = null;
+        ResetAvailabilityState();
 
         Navigation.NavigateTo("/", true);
         return false;
@@ -89,6 +78,8 @@ public sealed partial class Bookings : ComponentBase, IDisposable
     {
         IsLoadingClinics = true;
         ClinicsError = null;
+        IsLoadingAvailability = true;
+        AvailabilityError = null;
 
         try
         {
@@ -97,10 +88,9 @@ public sealed partial class Bookings : ComponentBase, IDisposable
             if (response is null || !response.Success)
             {
                 ClinicsError = "We couldn't load clinics right now. Please try again soon.";
-                Clinics = Array.Empty<ClinicSummary>();
-                SelectedClinic = null;
-                SelectedRange = new();
-                SelectedSlot = null;
+                ClearSelection();
+                ResetAvailabilityState();
+                AvailabilityError = ClinicsError;
                 return;
             }
 
@@ -112,16 +102,24 @@ public sealed partial class Bookings : ComponentBase, IDisposable
                 .ToList();
 
             SelectedClinic = Clinics.FirstOrDefault();
-            SelectedRange = BuildDefaultRange();
+            SelectedRange = BuildInitialRange();
             SelectedSlot = null;
+
+            if (SelectedClinic is not null)
+            {
+                await LoadAvailabilityAsync();
+            }
+            else
+            {
+                ResetAvailabilityState();
+            }
         }
         catch
         {
             ClinicsError = "We couldn't load clinics right now. Please try again soon.";
-            Clinics = Array.Empty<ClinicSummary>();
-            SelectedClinic = null;
-            SelectedRange = new();
-            SelectedSlot = null;
+            ClearSelection();
+            ResetAvailabilityState();
+            AvailabilityError = ClinicsError;
         }
         finally
         {
@@ -130,41 +128,35 @@ public sealed partial class Bookings : ComponentBase, IDisposable
         }
     }
 
-    private ClinicSummary MapClinic(ClinicSummaryDto dto)
-    {
-        var availableToday = 0;
+    private static ClinicSummary MapClinic(ClinicSummaryDto dto) => new(
+        dto.Id,
+        dto.Name,
+        dto.City,
+        dto.Province,
+        dto.PhoneNumber,
+        dto.ClinicLogo,
+        0);
 
-        if (_mockSchedule.TryGetValue(dto.Id, out var schedule))
+    private async Task HandleClinicChanged(ClinicSummary? clinic)
+    {
+        if (SelectedClinic?.Id == clinic?.Id)
         {
-            var today = DateOnly.FromDateTime(DateTime.Today);
-            var todayAvailability = schedule.Availability.FirstOrDefault(day => day.Date == today);
-            if (todayAvailability is not null)
-            {
-                availableToday = todayAvailability.Slots.Count(slot => !slot.IsReserved);
-            }
+            return;
         }
 
-        return new ClinicSummary(
-            dto.Id,
-            dto.Name,
-            dto.City,
-            dto.Province,
-            dto.PhoneNumber,
-            dto.ClinicLogo,
-            availableToday);
-    }
-
-    private void HandleClinicChanged(ClinicSummary? clinic)
-    {
         SelectedClinic = clinic;
-        SelectedRange = BuildDefaultRange();
+        SelectedRange = BuildInitialRange();
         SelectedSlot = null;
+
+        await LoadAvailabilityAsync();
     }
 
-    private void HandleRangeChanged(DateRange range)
+    private async Task HandleRangeChanged(DateRange range)
     {
         SelectedRange = range ?? new DateRange();
         SelectedSlot = null;
+
+        await LoadAvailabilityAsync();
     }
 
     private void HandleSlotChanged(ScheduledSlot? slot)
@@ -172,73 +164,204 @@ public sealed partial class Bookings : ComponentBase, IDisposable
         SelectedSlot = slot;
     }
 
-    private DateRange BuildDefaultRange()
+    private static DateRange BuildInitialRange() => new(
+        DateTime.Today,
+        DateTime.Today.AddDays(6));
+
+    private void ClearSelection()
     {
-        var availability = ClinicAvailability;
+        Clinics = Array.Empty<ClinicSummary>();
+        SelectedClinic = null;
+        SelectedRange = new();
+        SelectedSlot = null;
+    }
+
+    private void ResetAvailabilityState()
+    {
+        _availabilityCts?.Cancel();
+        _availabilityCts?.Dispose();
+        _availabilityCts = null;
+
+        _currentAvailability = Array.Empty<DailyAvailability>();
+        _currentAvailabilityClinicId = null;
+        AvailabilityError = null;
+        IsLoadingAvailability = false;
+    }
+
+    private async Task LoadAvailabilityAsync()
+    {
+        _availabilityCts?.Cancel();
+        _availabilityCts?.Dispose();
+        _availabilityCts = null;
+
+        if (SelectedClinic is null)
+        {
+            ResetAvailabilityState();
+            await InvokeAsync(StateHasChanged);
+            return;
+        }
+
+        var cts = new CancellationTokenSource();
+        _availabilityCts = cts;
+
+        IsLoadingAvailability = true;
+        AvailabilityError = null;
+        _currentAvailability = Array.Empty<DailyAvailability>();
+        _currentAvailabilityClinicId = null;
+
+        await InvokeAsync(StateHasChanged);
+
+        try
+        {
+            var (start, end) = DetermineRequestedRange();
+            var slots = await BookingApiClient.GetAvailabilityAsync(SelectedClinic.Id, start, end, cts.Token);
+            var availability = BuildAvailability(slots);
+
+            if (cts.IsCancellationRequested)
+            {
+                return;
+            }
+
+            _currentAvailabilityClinicId = SelectedClinic.Id;
+            _currentAvailability = availability;
+
+            UpdateClinicSummary(SelectedClinic.Id, availability);
+            EnsureSelectedSlotIsValid(availability);
+            EnsureRangeInitialized(availability);
+        }
+        catch (OperationCanceledException)
+        {
+            // Ignored
+        }
+        catch
+        {
+            if (!cts.IsCancellationRequested)
+            {
+                AvailabilityError = "We couldn't load availability right now. Please try again soon.";
+            }
+        }
+        finally
+        {
+            if (_availabilityCts == cts)
+            {
+                _availabilityCts.Dispose();
+                _availabilityCts = null;
+            }
+
+            if (!cts.IsCancellationRequested)
+            {
+                IsLoadingAvailability = false;
+                await InvokeAsync(StateHasChanged);
+            }
+        }
+    }
+
+    private (DateOnly Start, DateOnly End) DetermineRequestedRange()
+    {
+        if (SelectedRange.Start is null && SelectedRange.End is null)
+        {
+            var initialStart = DateOnly.FromDateTime(DateTime.Today);
+            return (initialStart, initialStart.AddDays(6));
+        }
+
+        var rangeStart = SelectedRange.Start is not null
+            ? DateOnly.FromDateTime(SelectedRange.Start.Value)
+            : DateOnly.FromDateTime(SelectedRange.End!.Value).AddDays(-6);
+
+        var rangeEnd = SelectedRange.End is not null
+            ? DateOnly.FromDateTime(SelectedRange.End.Value)
+            : rangeStart.AddDays(6);
+
+        if (rangeEnd < rangeStart)
+        {
+            (rangeStart, rangeEnd) = (rangeEnd, rangeStart);
+        }
+
+        return (rangeStart, rangeEnd);
+    }
+
+    private static IReadOnlyList<DailyAvailability> BuildAvailability(IEnumerable<AvailableSlotResponse> slots)
+    {
+        return slots
+            .GroupBy(slot => DateOnly.FromDateTime(slot.StartTime))
+            .OrderBy(group => group.Key)
+            .Select(group => new DailyAvailability(
+                group.Key,
+                group
+                    .OrderBy(slot => slot.StartTime)
+                    .Select(slot => new TimeSlotOption(TimeOnly.FromDateTime(slot.StartTime), slot.IsReserved))
+                    .ToList()))
+            .ToList();
+    }
+
+    private void UpdateClinicSummary(int clinicId, IReadOnlyList<DailyAvailability> availability)
+    {
+        var today = DateOnly.FromDateTime(DateTime.Today);
+        var availableToday = availability
+            .FirstOrDefault(day => day.Date == today)?
+            .Slots.Count(slot => !slot.IsReserved) ?? 0;
+
+        Clinics = Clinics
+            .Select(clinic => clinic.Id == clinicId ? clinic with { AvailableSlotsToday = availableToday } : clinic)
+            .OrderBy(clinic => clinic.Name)
+            .ToList();
+
+        if (SelectedClinic?.Id == clinicId)
+        {
+            SelectedClinic = Clinics.FirstOrDefault(clinic => clinic.Id == clinicId);
+        }
+    }
+
+    private void EnsureSelectedSlotIsValid(IReadOnlyList<DailyAvailability> availability)
+    {
+        if (SelectedSlot is null)
+        {
+            return;
+        }
+
+        var day = availability.FirstOrDefault(a => a.Date == SelectedSlot.Date);
+        if (day is null)
+        {
+            SelectedSlot = null;
+            return;
+        }
+
+        var slot = day.Slots.FirstOrDefault(s => s.StartTime == SelectedSlot.Slot.StartTime && !s.IsReserved);
+        if (slot is null)
+        {
+            SelectedSlot = null;
+        }
+        else
+        {
+            SelectedSlot = new ScheduledSlot(SelectedSlot.Date, slot);
+        }
+    }
+
+    private void EnsureRangeInitialized(IReadOnlyList<DailyAvailability> availability)
+    {
         if (availability.Count == 0)
         {
-            return new DateRange();
+            return;
+        }
+
+        if (SelectedRange.Start is not null && SelectedRange.End is not null)
+        {
+            return;
         }
 
         var first = availability.Min(a => a.Date);
         var last = availability.Max(a => a.Date);
 
-        return new DateRange(
+        SelectedRange = new DateRange(
             first.ToDateTime(TimeOnly.MinValue),
             last.ToDateTime(TimeOnly.MinValue));
-    }
-
-    private static IReadOnlyDictionary<int, ClinicSchedule> BuildMockSchedule()
-    {
-        var today = DateOnly.FromDateTime(DateTime.Today);
-        var tomorrow = today.AddDays(1);
-        var dayAfter = today.AddDays(2);
-
-        TimeSlotOption[] BuildSlots(params int[] hours) => hours
-            .Select(h => new TimeSlotOption(new TimeOnly(h, 0)))
-            .ToArray();
-
-        return new Dictionary<int, ClinicSchedule>
-        {
-            [1] = new ClinicSchedule(
-                1,
-                new[]
-                {
-                    new DailyAvailability(today, BuildSlots(9, 10, 11, 13, 15)),
-                    new DailyAvailability(tomorrow, BuildSlots(9, 12, 14)),
-                    new DailyAvailability(dayAfter, BuildSlots(10, 11, 14, 16))
-                }),
-            [2] = new ClinicSchedule(
-                2,
-                new[]
-                {
-                    new DailyAvailability(today, BuildSlots(8, 9, 10, 11)),
-                    new DailyAvailability(tomorrow, BuildSlots(9, 11, 15)),
-                    new DailyAvailability(dayAfter, BuildSlots(9, 10, 12))
-                }),
-            [3] = new ClinicSchedule(
-                3,
-                new[]
-                {
-                    new DailyAvailability(today, BuildSlots(10, 11, 12)),
-                    new DailyAvailability(tomorrow, BuildSlots(11, 13, 15)),
-                    new DailyAvailability(dayAfter, BuildSlots(9, 10, 11))
-                }),
-            [4] = new ClinicSchedule(
-                4,
-                new[]
-                {
-                    new DailyAvailability(today, BuildSlots(8, 10, 12)),
-                    new DailyAvailability(tomorrow, BuildSlots(9, 12)),
-                    new DailyAvailability(dayAfter, BuildSlots(10, 13, 15))
-                })
-        };
     }
 
     private void HandleAuthStateChanged()
     {
         if (AuthState.CurrentUser is null)
         {
+            _availabilityCts?.Cancel();
             _ = InvokeAsync(() => Navigation.NavigateTo("/", true));
         }
     }
@@ -246,5 +369,7 @@ public sealed partial class Bookings : ComponentBase, IDisposable
     public void Dispose()
     {
         AuthState.StateChanged -= HandleAuthStateChanged;
+        _availabilityCts?.Cancel();
+        _availabilityCts?.Dispose();
     }
 }
