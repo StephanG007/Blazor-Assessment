@@ -3,11 +3,11 @@
 @implements IDisposable
 
 <MudNavMenu Dense="true">
-    <MudNavLink Href="/bookings" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Event">
-        Book appointment
-    </MudNavLink>
     @if (IsAuthenticated)
     {
+        <MudNavLink Href="/bookings" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Event">
+            Book appointment
+        </MudNavLink>
         <MudNavLink Href="/users" Icon="@Icons.Material.Filled.Group">
             Users
         </MudNavLink>

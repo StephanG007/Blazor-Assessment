@@ -34,8 +34,16 @@
     gap: 1rem;
 }
 
-.clinic-card__badge {
+.clinic-card__logo {
     box-shadow: 0 10px 22px rgba(103, 80, 164, 0.24);
+    border-radius: 14px;
+    overflow: hidden;
+}
+
+.clinic-card__logo :deep(img) {
+    object-fit: contain;
+    padding: 0.25rem;
+    background-color: rgba(255, 255, 255, 0.92);
 }
 
 .clinic-card__title {
@@ -47,6 +55,13 @@
     align-items: center;
     gap: 0.75rem;
     color: rgba(28, 27, 31, 0.6);
+}
+
+.clinic-card__contact {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: rgba(28, 27, 31, 0.7);
 }
 
 .slot-summary {

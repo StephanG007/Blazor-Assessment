@@ -1,27 +1,34 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using Contracts.Clinics;
 using Microsoft.AspNetCore.Components;
 using MudBlazor;
-using System.Linq;
 using UI.Components.Bookings;
+using UI.Services;
 
 namespace UI.Pages.Bookings;
 
-public sealed partial class Bookings : ComponentBase
+public sealed partial class Bookings : ComponentBase, IDisposable
 {
-    private readonly IReadOnlyList<ClinicSummary> Clinics = new List<ClinicSummary>
-    {
-        new(Guid.Parse("11111111-1111-1111-1111-111111111111"), "Clinic A", "City", "Province", 12),
-        new(Guid.Parse("22222222-2222-2222-2222-222222222222"), "Clinic B", "City", "Province", 8),
-        new(Guid.Parse("33333333-3333-3333-3333-333333333333"), "Clinic C", "City", "Province", 4),
-        new(Guid.Parse("44444444-4444-4444-4444-444444444444"), "Clinic D", "City", "Province", 3)
-    };
+    private readonly IReadOnlyDictionary<int, ClinicSchedule> _mockSchedule;
 
-    private readonly IReadOnlyDictionary<Guid, ClinicSchedule> _mockSchedule;
-
+    private IReadOnlyList<ClinicSummary> Clinics { get; set; } = Array.Empty<ClinicSummary>();
     private ClinicSummary? SelectedClinic { get; set; }
-
     private DateRange SelectedRange { get; set; } = new();
-
     private ScheduledSlot? SelectedSlot { get; set; }
+    private bool IsLoadingClinics { get; set; } = true;
+    private string? ClinicsError { get; set; }
+
+    [Inject]
+    private BookingApiClient BookingApiClient { get; set; } = default!;
+
+    [Inject]
+    private NavigationManager Navigation { get; set; } = default!;
+
+    [Inject]
+    private AuthState AuthState { get; set; } = default!;
 
     private IReadOnlyList<DailyAvailability> ClinicAvailability
     {
@@ -48,13 +55,103 @@ public sealed partial class Bookings : ComponentBase
 
     protected override void OnInitialized()
     {
-        SelectedClinic = Clinics.FirstOrDefault();
-        if (SelectedClinic is null)
+        AuthState.StateChanged += HandleAuthStateChanged;
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!EnsureAuthenticated())
         {
             return;
         }
 
-        SelectedRange = BuildDefaultRange();
+        await LoadClinicsAsync();
+    }
+
+    private bool EnsureAuthenticated()
+    {
+        if (AuthState.CurrentUser is not null)
+        {
+            return true;
+        }
+
+        IsLoadingClinics = false;
+        Clinics = Array.Empty<ClinicSummary>();
+        SelectedClinic = null;
+        SelectedRange = new();
+        SelectedSlot = null;
+
+        Navigation.NavigateTo("/", true);
+        return false;
+    }
+
+    private async Task LoadClinicsAsync()
+    {
+        IsLoadingClinics = true;
+        ClinicsError = null;
+
+        try
+        {
+            var response = await BookingApiClient.GetClinicsAsync();
+
+            if (response is null || !response.Success)
+            {
+                ClinicsError = "We couldn't load clinics right now. Please try again soon.";
+                Clinics = Array.Empty<ClinicSummary>();
+                SelectedClinic = null;
+                SelectedRange = new();
+                SelectedSlot = null;
+                return;
+            }
+
+            var clinicDtos = response.Clinics ?? new List<ClinicSummaryDto>();
+
+            Clinics = clinicDtos
+                .Select(MapClinic)
+                .OrderBy(clinic => clinic.Name)
+                .ToList();
+
+            SelectedClinic = Clinics.FirstOrDefault();
+            SelectedRange = BuildDefaultRange();
+            SelectedSlot = null;
+        }
+        catch
+        {
+            ClinicsError = "We couldn't load clinics right now. Please try again soon.";
+            Clinics = Array.Empty<ClinicSummary>();
+            SelectedClinic = null;
+            SelectedRange = new();
+            SelectedSlot = null;
+        }
+        finally
+        {
+            IsLoadingClinics = false;
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private ClinicSummary MapClinic(ClinicSummaryDto dto)
+    {
+        var availableToday = 0;
+
+        if (_mockSchedule.TryGetValue(dto.Id, out var schedule))
+        {
+            var today = DateOnly.FromDateTime(DateTime.Today);
+            var todayAvailability = schedule.Availability.FirstOrDefault(day => day.Date == today);
+            if (todayAvailability is not null)
+            {
+                availableToday = todayAvailability.Slots.Count(slot => !slot.IsReserved);
+            }
+        }
+
+        return new ClinicSummary(
+            dto.Id,
+            dto.Name,
+            dto.City,
+            dto.Province,
+            dto.PhoneNumber,
+            dto.ClinicLogo,
+            availableToday);
     }
 
     private void HandleClinicChanged(ClinicSummary? clinic)
@@ -75,27 +172,6 @@ public sealed partial class Bookings : ComponentBase
         SelectedSlot = slot;
     }
 
-    private string GetRangeSummary()
-    {
-        if (SelectedRange.Start is null || SelectedRange.End is null)
-        {
-            return "Select a date range";
-        }
-
-        var start = SelectedRange.Start.Value;
-        var end = SelectedRange.End.Value;
-
-        if (start.Date == end.Date)
-        {
-            return start.ToString("MMM d, yyyy");
-        }
-
-        var startFormat = start.ToString(start.Year == end.Year ? "MMM d" : "MMM d, yyyy");
-        var endFormat = end.ToString("MMM d, yyyy");
-
-        return $"{startFormat} - {endFormat}";
-    }
-
     private DateRange BuildDefaultRange()
     {
         var availability = ClinicAvailability;
@@ -112,7 +188,7 @@ public sealed partial class Bookings : ComponentBase
             last.ToDateTime(TimeOnly.MinValue));
     }
 
-    private static IReadOnlyDictionary<Guid, ClinicSchedule> BuildMockSchedule()
+    private static IReadOnlyDictionary<int, ClinicSchedule> BuildMockSchedule()
     {
         var today = DateOnly.FromDateTime(DateTime.Today);
         var tomorrow = today.AddDays(1);
@@ -122,34 +198,34 @@ public sealed partial class Bookings : ComponentBase
             .Select(h => new TimeSlotOption(new TimeOnly(h, 0)))
             .ToArray();
 
-        return new Dictionary<Guid, ClinicSchedule>
+        return new Dictionary<int, ClinicSchedule>
         {
-            [Guid.Parse("11111111-1111-1111-1111-111111111111")] = new ClinicSchedule(
-                Guid.Parse("11111111-1111-1111-1111-111111111111"),
+            [1] = new ClinicSchedule(
+                1,
                 new[]
                 {
                     new DailyAvailability(today, BuildSlots(9, 10, 11, 13, 15)),
                     new DailyAvailability(tomorrow, BuildSlots(9, 12, 14)),
                     new DailyAvailability(dayAfter, BuildSlots(10, 11, 14, 16))
                 }),
-            [Guid.Parse("22222222-2222-2222-2222-222222222222")] = new ClinicSchedule(
-                Guid.Parse("22222222-2222-2222-2222-222222222222"),
+            [2] = new ClinicSchedule(
+                2,
                 new[]
                 {
                     new DailyAvailability(today, BuildSlots(8, 9, 10, 11)),
                     new DailyAvailability(tomorrow, BuildSlots(9, 11, 15)),
                     new DailyAvailability(dayAfter, BuildSlots(9, 10, 12))
                 }),
-            [Guid.Parse("33333333-3333-3333-3333-333333333333")] = new ClinicSchedule(
-                Guid.Parse("33333333-3333-3333-3333-333333333333"),
+            [3] = new ClinicSchedule(
+                3,
                 new[]
                 {
                     new DailyAvailability(today, BuildSlots(10, 11, 12)),
                     new DailyAvailability(tomorrow, BuildSlots(11, 13, 15)),
                     new DailyAvailability(dayAfter, BuildSlots(9, 10, 11))
                 }),
-            [Guid.Parse("44444444-4444-4444-4444-444444444444")] = new ClinicSchedule(
-                Guid.Parse("44444444-4444-4444-4444-444444444444"),
+            [4] = new ClinicSchedule(
+                4,
                 new[]
                 {
                     new DailyAvailability(today, BuildSlots(8, 10, 12)),
@@ -157,5 +233,18 @@ public sealed partial class Bookings : ComponentBase
                     new DailyAvailability(dayAfter, BuildSlots(10, 13, 15))
                 })
         };
+    }
+
+    private void HandleAuthStateChanged()
+    {
+        if (AuthState.CurrentUser is null)
+        {
+            _ = InvokeAsync(() => Navigation.NavigateTo("/", true));
+        }
+    }
+
+    public void Dispose()
+    {
+        AuthState.StateChanged -= HandleAuthStateChanged;
     }
 }

@@ -1,22 +1,30 @@
+@using UI.Services
 @inherits LayoutComponentBase
 
+@inject AuthState AuthState
+@implements IDisposable
+
 <MudLayout>
-    <MudDrawer @bind-Open="_drawerOpen"
-               Variant="DrawerVariant.Responsive"
-               Elevation="2"
-               Class="main-drawer">
-        <MudDrawerHeader>
-            <MudText Typo="Typo.h5">Clinic Booking</MudText>
-            <MudText Typo="Typo.subtitle2" Class="mud-text-secondary">Plan your next visit</MudText>
-        </MudDrawerHeader>
-        <NavMenu />
-    </MudDrawer>
+    @if (IsAuthenticated)
+    {
+        <MudDrawer @bind-Open="_drawerOpen"
+                   Variant="DrawerVariant.Responsive"
+                   Elevation="2"
+                   Class="main-drawer">
+            <MudDrawerHeader>
+                <MudText Typo="Typo.h5">Clinic Booking</MudText>
+                <MudText Typo="Typo.subtitle2" Class="mud-text-secondary">Plan your next visit</MudText>
+            </MudDrawerHeader>
+            <NavMenu />
+        </MudDrawer>
+    }
 
     <MudMainContent Class="main-content">
         <MudAppBar Elevation="1" Color="Color.Surface" Class="main-appbar">
             <MudIconButton Icon="@Icons.Material.Filled.Menu"
                            Color="Color.Inherit"
                            Edge="Edge.Start"
+                           Disabled="@(!IsAuthenticated)"
                            OnClick="ToggleDrawer"
                            Class="appbar-menu" />
             <MudText Typo="Typo.h6" Class="appbar-title">Clinic Booking Portal</MudText>
@@ -25,7 +33,25 @@
         </MudAppBar>
 
         <MudContainer MaxWidth="MaxWidth.False" Class="layout-container">
-            @Body
+            @if (!IsAuthenticated)
+            {
+                <MudPaper Elevation="3" Class="guest-placeholder">
+                    <MudAvatar Color="Color.Primary"
+                               Size="Size.ExtraLarge"
+                               Variant="Variant.Filled"
+                               Class="guest-placeholder__avatar">
+                        <MudIcon Icon="@Icons.Material.Filled.Lock" />
+                    </MudAvatar>
+                    <MudText Typo="Typo.h4" Class="guest-placeholder__title">Welcome to the clinic booking portal</MudText>
+                    <MudText Typo="Typo.body1" Class="guest-placeholder__description">
+                        Log in using the form above to browse clinics, view availability, and book appointments.
+                    </MudText>
+                </MudPaper>
+            }
+            else
+            {
+                @Body
+            }
         </MudContainer>
     </MudMainContent>
 </MudLayout>
@@ -33,5 +59,22 @@
 @code {
     private bool _drawerOpen = true;
 
+    private bool IsAuthenticated => AuthState.CurrentUser is not null;
+
     private void ToggleDrawer() => _drawerOpen = !_drawerOpen;
+
+    protected override void OnInitialized()
+    {
+        AuthState.StateChanged += HandleAuthStateChanged;
+    }
+
+    private void HandleAuthStateChanged()
+    {
+        InvokeAsync(StateHasChanged);
+    }
+
+    public void Dispose()
+    {
+        AuthState.StateChanged -= HandleAuthStateChanged;
+    }
 }
