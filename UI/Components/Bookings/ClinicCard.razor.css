@@ -20,6 +20,7 @@
 
 .clinic-card__content {
     width: 100%;
+    padding: 1.25rem 1.5rem;
 }
 
 .clinic-card__stack {
