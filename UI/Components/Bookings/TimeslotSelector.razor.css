@@ -33,19 +33,20 @@
     gap: 1rem;
     padding: 1.25rem 1.5rem;
     border-radius: 20px;
-    border: 1px solid rgba(103, 80, 164, 0.14);
-    background: linear-gradient(180deg, rgba(255, 255, 255, 0.96) 0%, rgba(241, 236, 255, 0.9) 100%);
+    border: 1px solid var(--timeslot-day-border, rgba(103, 80, 164, 0.14));
+    background: var(--timeslot-day-background, linear-gradient(180deg, rgba(255, 255, 255, 0.96) 0%, rgba(241, 236, 255, 0.9) 100%));
     transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease;
 }
 
 .timeslot-day--selected {
     transform: translateY(-4px);
-    box-shadow: 0 20px 38px rgba(94, 137, 255, 0.18);
-    border-color: rgba(94, 137, 255, 0.5);
+    box-shadow: var(--timeslot-day-selected-shadow, 0 20px 38px rgba(94, 137, 255, 0.18));
+    border-color: var(--timeslot-day-selected-border, rgba(94, 137, 255, 0.5));
 }
 
 .timeslot-day__avatar {
-    box-shadow: 0 10px 24px rgba(94, 137, 255, 0.25);
+    box-shadow: var(--timeslot-avatar-shadow, 0 10px 24px rgba(94, 137, 255, 0.25));
+    background-color: var(--timeslot-avatar-background, rgba(94, 137, 255, 0.14));
 }
 
 .timeslot-day__stack {
@@ -81,6 +82,27 @@
     border-radius: 14px;
 }
 
+.timeslot-chip:not(.timeslot-chip--reserved).mud-chip {
+    border: 1px solid var(--timeslot-chip-border, rgba(94, 137, 255, 0.45));
+    color: var(--timeslot-chip-text, rgba(28, 27, 31, 0.8));
+    background-color: transparent;
+    transition: background-color 180ms ease, color 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
+}
+
+.timeslot-chip:not(.timeslot-chip--reserved).mud-chip.mud-chip-filled {
+    background-color: var(--timeslot-chip-filled-bg, rgba(94, 137, 255, 0.18));
+    border-color: var(--timeslot-chip-filled-border, var(--timeslot-chip-border, rgba(94, 137, 255, 0.45)));
+    color: var(--timeslot-chip-filled-text, #1c1b1f);
+    box-shadow: var(--timeslot-chip-filled-shadow, 0 14px 26px rgba(94, 137, 255, 0.22));
+}
+
+.timeslot-chip:not(.timeslot-chip--reserved).mud-chip.mud-chip-outlined:hover,
+.timeslot-chip:not(.timeslot-chip--reserved).mud-chip.mud-chip-filled:hover {
+    background-color: var(--timeslot-chip-hover-bg, rgba(94, 137, 255, 0.12));
+    color: var(--timeslot-chip-hover-text, var(--timeslot-chip-text, rgba(28, 27, 31, 0.8)));
+    box-shadow: var(--timeslot-chip-hover-shadow, 0 16px 32px rgba(94, 137, 255, 0.2));
+}
+
 .timeslot-chip--reserved {
     border-color: rgba(211, 47, 47, 0.45);
     background: rgba(229, 57, 53, 0.12);
@@ -90,4 +112,72 @@
 .timeslot-chip--reserved.mud-chip.mud-disabled {
     opacity: 1;
     cursor: not-allowed;
+}
+
+.clinic-theme--1 {
+    --timeslot-day-border: rgba(103, 80, 164, 0.18);
+    --timeslot-day-background: linear-gradient(180deg, rgba(103, 80, 164, 0.08) 0%, rgba(103, 80, 164, 0.02) 100%);
+    --timeslot-day-selected-border: rgba(103, 80, 164, 0.55);
+    --timeslot-day-selected-shadow: 0 22px 40px rgba(103, 80, 164, 0.25);
+    --timeslot-avatar-shadow: 0 10px 24px rgba(103, 80, 164, 0.26);
+    --timeslot-avatar-background: rgba(103, 80, 164, 0.14);
+    --timeslot-chip-border: rgba(103, 80, 164, 0.38);
+    --timeslot-chip-filled-bg: rgba(103, 80, 164, 0.2);
+    --timeslot-chip-filled-border: rgba(103, 80, 164, 0.4);
+    --timeslot-chip-text: #3b2c74;
+    --timeslot-chip-filled-text: #2a1a5a;
+    --timeslot-chip-hover-bg: rgba(103, 80, 164, 0.16);
+    --timeslot-chip-hover-text: #2a1a5a;
+    --timeslot-chip-hover-shadow: 0 16px 32px rgba(103, 80, 164, 0.24);
+}
+
+.clinic-theme--2 {
+    --timeslot-day-border: rgba(11, 143, 140, 0.2);
+    --timeslot-day-background: linear-gradient(180deg, rgba(11, 143, 140, 0.08) 0%, rgba(11, 143, 140, 0.02) 100%);
+    --timeslot-day-selected-border: rgba(11, 143, 140, 0.55);
+    --timeslot-day-selected-shadow: 0 22px 40px rgba(11, 143, 140, 0.24);
+    --timeslot-avatar-shadow: 0 10px 24px rgba(11, 143, 140, 0.24);
+    --timeslot-avatar-background: rgba(11, 143, 140, 0.12);
+    --timeslot-chip-border: rgba(11, 143, 140, 0.38);
+    --timeslot-chip-filled-bg: rgba(11, 143, 140, 0.22);
+    --timeslot-chip-filled-border: rgba(11, 143, 140, 0.42);
+    --timeslot-chip-text: #066864;
+    --timeslot-chip-filled-text: #034542;
+    --timeslot-chip-hover-bg: rgba(11, 143, 140, 0.14);
+    --timeslot-chip-hover-text: #034542;
+    --timeslot-chip-hover-shadow: 0 16px 32px rgba(11, 143, 140, 0.22);
+}
+
+.clinic-theme--3 {
+    --timeslot-day-border: rgba(245, 124, 0, 0.22);
+    --timeslot-day-background: linear-gradient(180deg, rgba(245, 124, 0, 0.08) 0%, rgba(245, 124, 0, 0.02) 100%);
+    --timeslot-day-selected-border: rgba(245, 124, 0, 0.6);
+    --timeslot-day-selected-shadow: 0 22px 40px rgba(245, 124, 0, 0.26);
+    --timeslot-avatar-shadow: 0 10px 24px rgba(245, 124, 0, 0.26);
+    --timeslot-avatar-background: rgba(245, 124, 0, 0.12);
+    --timeslot-chip-border: rgba(245, 124, 0, 0.4);
+    --timeslot-chip-filled-bg: rgba(245, 124, 0, 0.2);
+    --timeslot-chip-filled-border: rgba(245, 124, 0, 0.42);
+    --timeslot-chip-text: #8a4800;
+    --timeslot-chip-filled-text: #5a2f00;
+    --timeslot-chip-hover-bg: rgba(245, 124, 0, 0.14);
+    --timeslot-chip-hover-text: #5a2f00;
+    --timeslot-chip-hover-shadow: 0 16px 32px rgba(245, 124, 0, 0.24);
+}
+
+.clinic-theme--4 {
+    --timeslot-day-border: rgba(30, 136, 229, 0.2);
+    --timeslot-day-background: linear-gradient(180deg, rgba(30, 136, 229, 0.08) 0%, rgba(30, 136, 229, 0.02) 100%);
+    --timeslot-day-selected-border: rgba(30, 136, 229, 0.55);
+    --timeslot-day-selected-shadow: 0 22px 40px rgba(30, 136, 229, 0.26);
+    --timeslot-avatar-shadow: 0 10px 24px rgba(30, 136, 229, 0.26);
+    --timeslot-avatar-background: rgba(30, 136, 229, 0.12);
+    --timeslot-chip-border: rgba(30, 136, 229, 0.4);
+    --timeslot-chip-filled-bg: rgba(30, 136, 229, 0.22);
+    --timeslot-chip-filled-border: rgba(30, 136, 229, 0.42);
+    --timeslot-chip-text: #0f4f82;
+    --timeslot-chip-filled-text: #07345a;
+    --timeslot-chip-hover-bg: rgba(30, 136, 229, 0.16);
+    --timeslot-chip-hover-text: #07345a;
+    --timeslot-chip-hover-shadow: 0 16px 32px rgba(30, 136, 229, 0.24);
 }

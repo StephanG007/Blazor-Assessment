@@ -1,7 +1,7 @@
 @using System.Linq
 @namespace UI.Components.Bookings
 
-<MudStack Spacing="3" Class="timeslot-selector">
+<MudStack Spacing="3" Class="@TimeslotContainerClass">
     <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Class="timeslot-header">
         <MudStack Class="timeslot-header__content">
             <MudText Typo="Typo.h5" Class="timeslot-title">
@@ -48,7 +48,7 @@
                         <MudStack Class="timeslot-day__stack">
                             <MudStack Row="true" AlignItems="AlignItems.Center" Class="timeslot-day__header">
                                 <MudAvatar Size="Size.Small"
-                                           Color="Color.Secondary"
+                                           Color="Color.Default"
                                            Variant="Variant.Filled"
                                            Class="timeslot-day__avatar">
                                     <MudIcon Icon="@Icons.Material.Filled.CalendarToday" />
@@ -126,6 +126,12 @@
         }
     }
 
+    private string TimeslotContainerClass => string.IsNullOrWhiteSpace(ThemeClass)
+        ? "timeslot-selector"
+        : $"timeslot-selector {ThemeClass}";
+
+    private string ThemeClass => Clinic is null ? string.Empty : ClinicTheme.GetThemeClass(Clinic.Id);
+
     private IReadOnlyList<DailyAvailability> FilteredAvailability => Availability
         .Where(day => IsWithinRange(day.Date))
         .OrderBy(day => day.Date)
@@ -162,9 +168,16 @@
 
     private bool IsDaySelected(DateOnly date) => SelectedSlot?.Date == date;
 
-    private string GetDayClass(DateOnly date) => IsDaySelected(date)
-        ? "timeslot-day timeslot-day--selected"
-        : "timeslot-day";
+    private string GetDayClass(DateOnly date)
+    {
+        var baseClass = "timeslot-day";
+        if (IsDaySelected(date))
+        {
+            baseClass += " timeslot-day--selected";
+        }
+
+        return baseClass;
+    }
 
     private bool IsWithinRange(DateOnly date)
     {
@@ -202,7 +215,7 @@
 
     private static Color GetChipColor(TimeSlotOption slot) => slot.IsReserved
         ? Color.Error
-        : Color.Secondary;
+        : Color.Default;
 
     private Variant GetChipVariant(DateOnly date, TimeSlotOption slot) => slot.IsReserved
         ? Variant.Outlined

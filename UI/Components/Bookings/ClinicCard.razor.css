@@ -4,18 +4,18 @@
     transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease;
     min-height: 180px;
     display: flex;
-    border: 1px solid rgba(103, 80, 164, 0.12);
-    background: linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, rgba(255, 255, 255, 0.88) 100%);
+    border: 1px solid var(--clinic-card-border, rgba(103, 80, 164, 0.12));
+    background: var(--clinic-card-background, linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, rgba(255, 255, 255, 0.88) 100%));
 }
 
 .clinic-card:hover {
     transform: translateY(-6px);
-    box-shadow: 0 18px 36px rgba(32, 31, 69, 0.12);
+    box-shadow: var(--clinic-card-hover-shadow, 0 18px 36px rgba(32, 31, 69, 0.12));
 }
 
 .clinic-card--selected {
-    border: 2px solid var(--mud-palette-primary);
-    box-shadow: 0 24px 40px rgba(103, 80, 164, 0.18);
+    border: 2px solid var(--clinic-card-selected-border, var(--mud-palette-primary));
+    box-shadow: var(--clinic-card-selected-shadow, 0 24px 40px rgba(103, 80, 164, 0.18));
 }
 
 .clinic-card__content {
@@ -35,15 +35,17 @@
 }
 
 .clinic-card__logo {
-    box-shadow: 0 10px 22px rgba(103, 80, 164, 0.24);
+    box-shadow: var(--clinic-card-avatar-shadow, 0 10px 22px rgba(103, 80, 164, 0.24));
     border-radius: 14px;
     overflow: hidden;
+    background-color: var(--clinic-card-avatar-fill, var(--mud-palette-primary));
+    color: var(--clinic-card-avatar-text, #ffffff);
 }
 
 .clinic-card__logo :deep(img) {
     object-fit: contain;
     padding: 0.25rem;
-    background-color: rgba(255, 255, 255, 0.92);
+    background-color: var(--clinic-card-avatar-background, rgba(255, 255, 255, 0.92));
 }
 
 .clinic-card__title {
@@ -67,4 +69,52 @@
 .slot-summary {
     font-weight: 600;
     margin-top: 0.25rem;
+}
+
+.clinic-theme--1 {
+    --clinic-card-border: rgba(103, 80, 164, 0.18);
+    --clinic-card-background: linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, rgba(244, 240, 255, 0.92) 100%);
+    --clinic-card-hover-shadow: 0 18px 38px rgba(103, 80, 164, 0.25);
+    --clinic-card-selected-border: #6750A4;
+    --clinic-card-selected-shadow: 0 26px 44px rgba(103, 80, 164, 0.28);
+    --clinic-card-avatar-shadow: 0 10px 24px rgba(103, 80, 164, 0.28);
+    --clinic-card-avatar-background: rgba(255, 255, 255, 0.94);
+    --clinic-card-avatar-fill: #6750A4;
+    --clinic-card-avatar-text: #ffffff;
+}
+
+.clinic-theme--2 {
+    --clinic-card-border: rgba(11, 143, 140, 0.18);
+    --clinic-card-background: linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, rgba(224, 245, 243, 0.9) 100%);
+    --clinic-card-hover-shadow: 0 18px 38px rgba(11, 143, 140, 0.24);
+    --clinic-card-selected-border: #0B8F8C;
+    --clinic-card-selected-shadow: 0 26px 44px rgba(11, 143, 140, 0.28);
+    --clinic-card-avatar-shadow: 0 10px 24px rgba(11, 143, 140, 0.26);
+    --clinic-card-avatar-background: rgba(238, 251, 249, 0.98);
+    --clinic-card-avatar-fill: #0B8F8C;
+    --clinic-card-avatar-text: #ffffff;
+}
+
+.clinic-theme--3 {
+    --clinic-card-border: rgba(245, 124, 0, 0.2);
+    --clinic-card-background: linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, rgba(255, 242, 224, 0.9) 100%);
+    --clinic-card-hover-shadow: 0 18px 38px rgba(245, 124, 0, 0.25);
+    --clinic-card-selected-border: #F57C00;
+    --clinic-card-selected-shadow: 0 26px 44px rgba(245, 124, 0, 0.3);
+    --clinic-card-avatar-shadow: 0 10px 24px rgba(245, 124, 0, 0.28);
+    --clinic-card-avatar-background: rgba(255, 250, 240, 0.96);
+    --clinic-card-avatar-fill: #F57C00;
+    --clinic-card-avatar-text: #ffffff;
+}
+
+.clinic-theme--4 {
+    --clinic-card-border: rgba(30, 136, 229, 0.2);
+    --clinic-card-background: linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, rgba(232, 244, 255, 0.9) 100%);
+    --clinic-card-hover-shadow: 0 18px 38px rgba(30, 136, 229, 0.24);
+    --clinic-card-selected-border: #1E88E5;
+    --clinic-card-selected-shadow: 0 26px 44px rgba(30, 136, 229, 0.3);
+    --clinic-card-avatar-shadow: 0 10px 24px rgba(30, 136, 229, 0.28);
+    --clinic-card-avatar-background: rgba(239, 248, 255, 0.97);
+    --clinic-card-avatar-fill: #1E88E5;
+    --clinic-card-avatar-text: #ffffff;
 }
