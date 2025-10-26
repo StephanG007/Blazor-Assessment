@@ -1,7 +1,7 @@
 @namespace UI.Components.Bookings
 
 <MudStack Spacing="2">
-    <MudStack Direction="Row" AlignItems="Center" Justify="Space-between">
+    <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
         <MudText Typo="Typo.h5">
             @if (Clinic is null)
             {
@@ -14,13 +14,10 @@
         </MudText>
         <MudDatePicker @bind-Date="DateSelection"
                        Disabled="@DisableDatePicker"
-                       DisableToolbar="true"
-                       InputIcon="@Icons.Material.Filled.CalendarToday"
                        MaxDate="@MaxDate"
                        MinDate="@MinDate"
                        Class="timeslot-date-picker"
-                       Variant="Variant.Outlined"
-                       CloseOnSelection="true" />
+                       Variant="Variant.Outlined" />
     </MudStack>
 
     <MudText Typo="Typo.body2" Class="mud-text-secondary">Pick a date to explore available times for the selected clinic.</MudText>
@@ -28,10 +25,15 @@
 
     @if (TimeSlots?.Count > 0)
     {
-        <MudChipSet Class="timeslot-chipset" Mandatory="false" MultiSelection="false">
+        <MudChipSet T="TimeSlotOption"
+                    Class="timeslot-chipset"
+                    Mandatory="false"
+                    MultiSelection="false">
             @foreach (var slot in TimeSlots)
             {
-                <MudChip Class="timeslot-chip"
+                <MudChip T="TimeSlotOption"
+                         Value="slot"
+                         Class="timeslot-chip"
                          Color="Color.Primary"
                          Variant="Variant.Outlined"
                          Disabled="@slot.IsReserved"
