@@ -7,20 +7,52 @@
     <MudGrid Spacing="3" Class="booking-grid">
         <MudItem xs="12">
             <MudPaper Elevation="2" Class="booking-panel booking-panel--clinics">
-                <ClinicList Clinics="Clinics"
-                            SelectedClinic="SelectedClinic"
-                            SelectedClinicChanged="HandleClinicChanged" />
+                @if (IsLoadingClinics)
+                {
+                    <MudStack AlignItems="AlignItems.Center"
+                              Justify="Justify.Center"
+                              Class="booking-loader">
+                        <MudProgressCircular Color="Color.Primary" Indeterminate="true" Size="Size.Large" />
+                        <MudText Typo="Typo.subtitle1">Loading clinics…</MudText>
+                    </MudStack>
+                }
+                else if (!string.IsNullOrWhiteSpace(ClinicsError))
+                {
+                    <MudAlert Severity="Severity.Error" Elevation="0">@ClinicsError</MudAlert>
+                }
+                else
+                {
+                    <ClinicList Clinics="Clinics"
+                                SelectedClinic="SelectedClinic"
+                                SelectedClinicChanged="HandleClinicChanged" />
+                }
             </MudPaper>
         </MudItem>
 
         <MudItem xs="12">
             <MudPaper Elevation="2" Class="booking-panel booking-panel--availability">
-                <TimeslotSelector Clinic="SelectedClinic"
-                                  Availability="ClinicAvailability"
-                                  SelectedRange="SelectedRange"
-                                  SelectedRangeChanged="HandleRangeChanged"
-                                  SelectedSlot="SelectedSlot"
-                                  SelectedSlotChanged="HandleSlotChanged" />
+                @if (IsLoadingClinics)
+                {
+                    <MudStack AlignItems="AlignItems.Center"
+                              Justify="Justify.Center"
+                              Class="booking-loader booking-loader--availability">
+                        <MudProgressCircular Color="Color.Secondary" Indeterminate="true" />
+                        <MudText Typo="Typo.subtitle1">Preparing availability…</MudText>
+                    </MudStack>
+                }
+                else if (!string.IsNullOrWhiteSpace(ClinicsError))
+                {
+                    <MudAlert Severity="Severity.Error" Elevation="0">@ClinicsError</MudAlert>
+                }
+                else
+                {
+                    <TimeslotSelector Clinic="SelectedClinic"
+                                      Availability="ClinicAvailability"
+                                      SelectedRange="SelectedRange"
+                                      SelectedRangeChanged="HandleRangeChanged"
+                                      SelectedSlot="SelectedSlot"
+                                      SelectedSlotChanged="HandleSlotChanged" />
+                }
             </MudPaper>
         </MudItem>
     </MudGrid>

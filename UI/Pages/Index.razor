@@ -1,19 +1,63 @@
 @page "/"
 
+@using UI.Services
 @inject NavigationManager Navigation
+@inject AuthState AuthState
+@implements IDisposable
 
 <PageTitle>Bookings</PageTitle>
 
-<MudContainer MaxWidth="MaxWidth.ExtraSmall" Class="index-redirect">
-    <MudPaper Elevation="1" Class="index-redirect__paper">
-        <MudProgressCircular Indeterminate="true" Color="Color.Primary" />
-        <MudText Typo="Typo.body1">Redirecting to the bookings experience…</MudText>
-    </MudPaper>
-</MudContainer>
+@if (IsAuthenticated)
+{
+    <MudContainer MaxWidth="MaxWidth.ExtraSmall" Class="index-redirect">
+        <MudPaper Elevation="1" Class="index-redirect__paper">
+            <MudProgressCircular Indeterminate="true" Color="Color.Primary" />
+            <MudText Typo="Typo.body1">Redirecting to the bookings experience…</MudText>
+        </MudPaper>
+    </MudContainer>
+}
+else
+{
+    <MudContainer MaxWidth="MaxWidth.Small" Class="index-placeholder">
+        <MudPaper Elevation="2" Class="index-placeholder__paper">
+            <MudIcon Icon="@Icons.Material.Filled.CalendarMonth" Color="Color.Primary" Size="Size.Large" />
+            <MudText Typo="Typo.h5" Class="index-placeholder__title">Sign in to get started</MudText>
+            <MudText Typo="Typo.body1" Class="index-placeholder__subtitle">
+                Use the login form above to access clinic bookings and manage your appointments.
+            </MudText>
+        </MudPaper>
+    </MudContainer>
+}
 
 @code {
+    private bool IsAuthenticated => AuthState.CurrentUser is not null;
+
     protected override void OnInitialized()
     {
-        Navigation.NavigateTo("/bookings", replace: true);
+        AuthState.StateChanged += HandleAuthStateChanged;
+
+        if (IsAuthenticated)
+        {
+            NavigateToBookings();
+        }
+    }
+
+    private void HandleAuthStateChanged()
+    {
+        if (AuthState.CurrentUser is not null)
+        {
+            NavigateToBookings();
+        }
+        else
+        {
+            InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private void NavigateToBookings() => Navigation.NavigateTo("/bookings", replace: true);
+
+    public void Dispose()
+    {
+        AuthState.StateChanged -= HandleAuthStateChanged;
     }
 }
