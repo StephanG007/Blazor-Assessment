@@ -5,5 +5,5 @@ namespace API.Interfaces;
 
 public interface IClinicService
 {
-    public Task<List<ClinicSummaryDto>> GetClinics(CancellationToken cancellationToken);
+    public Task<List<ClinicDto>> GetClinics(CancellationToken cancellationToken);
 }

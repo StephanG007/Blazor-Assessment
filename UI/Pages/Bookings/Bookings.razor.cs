@@ -100,7 +100,7 @@ public sealed partial class Bookings : ComponentBase, IDisposable
                 return;
             }
 
-            var clinicDtos = response.Clinics ?? new List<ClinicSummaryDto>();
+            var clinicDtos = response.Clinics ?? new List<ClinicDto>();
 
             Clinics = clinicDtos
                 .Select(MapClinic)
@@ -134,7 +134,7 @@ public sealed partial class Bookings : ComponentBase, IDisposable
         }
     }
 
-    private static ClinicSummary MapClinic(ClinicSummaryDto dto) => new(
+    private static ClinicSummary MapClinic(ClinicDto dto) => new(
         dto.Id,
         dto.Name,
         dto.City,
@@ -175,11 +175,58 @@ public sealed partial class Bookings : ComponentBase, IDisposable
             return;
         }
 
+        BookingDetailsResponse? existingBooking = null;
+        var bookingId = slot.Slot.BookingId;
+
+        if (slot.Slot.IsReserved)
+        {
+            if (bookingId is null)
+            {
+                Snackbar.Add("We couldn't load booking details right now. Please try again soon.", Severity.Error);
+                SelectedSlot = null;
+                await InvokeAsync(StateHasChanged);
+                return;
+            }
+
+            try
+            {
+                existingBooking = await BookingApiClient.GetBookingByIdAsync(bookingId.Value);
+
+                if (existingBooking is null)
+                {
+                    Snackbar.Add("We couldn't find booking details for that slot anymore.", Severity.Warning);
+                    SelectedSlot = null;
+                    await LoadAvailabilityAsync();
+                    return;
+                }
+            }
+            catch (BookingRequestException ex)
+            {
+                Snackbar.Add(ex.Message, Severity.Error);
+                SelectedSlot = null;
+                await InvokeAsync(StateHasChanged);
+                return;
+            }
+            catch
+            {
+                Snackbar.Add("We couldn't load booking details right now. Please try again soon.", Severity.Error);
+                SelectedSlot = null;
+                await InvokeAsync(StateHasChanged);
+                return;
+            }
+        }
+
         var parameters = new DialogParameters
         {
             { nameof(BookTimeslotDialog.Clinic), SelectedClinic },
             { nameof(BookTimeslotDialog.Slot), slot }
         };
+
+        if (existingBooking is not null && bookingId.HasValue)
+        {
+            parameters.Add(nameof(BookTimeslotDialog.ExistingBooking), existingBooking);
+            parameters.Add(nameof(BookTimeslotDialog.BookingId), bookingId.Value);
+        }
 
         var options = new DialogOptions
         {
@@ -189,7 +236,8 @@ public sealed partial class Bookings : ComponentBase, IDisposable
             FullWidth = true
         };
 
-        var dialog = await DialogService.ShowAsync<BookTimeslotDialog>("Book appointment", parameters, options);
+        var dialogTitle = slot.Slot.IsReserved ? "Booking details" : "Book appointment";
+        var dialog = await DialogService.ShowAsync<BookTimeslotDialog>(dialogTitle, parameters, options);
 
         DialogResult result;
         try
@@ -203,9 +251,18 @@ public sealed partial class Bookings : ComponentBase, IDisposable
             return;
         }
 
-        if (!result.Canceled && result.Data is BookingDetailsResponse confirmation)
+        if (!result.Canceled && result.Data is BookingDialogResult bookingResult)
         {
-            ShowBookingSuccess(confirmation);
+            switch (bookingResult.Action)
+            {
+                case BookingDialogAction.Created when bookingResult.Details is not null:
+                    ShowBookingSuccess(bookingResult.Details);
+                    break;
+                case BookingDialogAction.Deleted:
+                    ShowBookingDeleted();
+                    break;
+            }
+
             SelectedSlot = null;
             await LoadAvailabilityAsync();
             return;
@@ -344,7 +401,8 @@ public sealed partial class Bookings : ComponentBase, IDisposable
                         slot.Id,
                         TimeOnly.FromDateTime(slot.StartTime),
                         TimeOnly.FromDateTime(slot.EndTime),
-                        slot.IsReserved))
+                        slot.IsReserved,
+                        slot.BookingId))
                     .ToList()))
             .ToList();
     }
@@ -381,7 +439,7 @@ public sealed partial class Bookings : ComponentBase, IDisposable
             return;
         }
 
-        var slot = day.Slots.FirstOrDefault(s => s.Id == SelectedSlot.Slot.Id && !s.IsReserved);
+        var slot = day.Slots.FirstOrDefault(s => s.Id == SelectedSlot.Slot.Id);
         if (slot is null)
         {
             SelectedSlot = null;
@@ -396,6 +454,11 @@ public sealed partial class Bookings : ComponentBase, IDisposable
     {
         var formatted = confirmation.StartTime.ToString("dddd, MMM d 'at' HH:mm");
         Snackbar.Add($"Appointment confirmed for {formatted} at {confirmation.ClinicName}.", Severity.Success);
+    }
+
+    private void ShowBookingDeleted()
+    {
+        Snackbar.Add("The booking was successfully deleted.", Severity.Success);
     }
 
     private void EnsureRangeInitialized(IReadOnlyList<DailyAvailability> availability)

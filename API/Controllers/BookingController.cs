@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Text.Json;
 using API.Interfaces;
 using Contracts.Bookings;
@@ -20,25 +21,15 @@ public class BookingController(IBookingService bookingService) : ControllerBase
         {
             var availableSlots = await bookingService.GetAvailableSlotsAsync(clinicId, startDate, endDate, cancellationToken);
 
+            if(availableSlots is null)
+                return NotFound();
+
             return Ok(availableSlots);
-        }
-        catch (KeyNotFoundException ex)
-        {
-            return Problem(
-                title: "Clinic not found",
-                detail: ex.Message,
-                statusCode: StatusCodes.Status404NotFound);
-        }
-        catch (InvalidOperationException ex)
-        {
-            return Problem(
-                title: "Slot unavailable",
-                detail: ex.Message,
-                statusCode: StatusCodes.Status409Conflict);
         }
         catch(Exception ex)
         {
             NoteException($"api/Booking/clinics/{clinicId}/availability{Request.QueryString.Value}", null, ex);
+            
             return Problem(
                 title: "An unexpected error occurred",
                 statusCode: StatusCodes.Status500InternalServerError);
@@ -87,6 +78,24 @@ public class BookingController(IBookingService bookingService) : ControllerBase
         catch(Exception ex)
         {
             NoteException($"api/Booking/{id}", null, ex);
+            return Problem(
+                title: "An unexpected error occurred",
+                statusCode: StatusCodes.Status500InternalServerError);
+        }
+    }
+
+    [HttpDelete("{id:int}")]
+    public async Task<IActionResult> DeleteBooking(int id, CancellationToken cancellationToken)
+    {
+        try
+        {
+            await bookingService.DeleteBookingAsync(id, cancellationToken);
+            return NoContent();
+        }
+        catch (Exception ex)
+        {
+            NoteException($"api/Booking/{id}", null, ex);
+
             return Problem(
                 title: "An unexpected error occurred",
                 statusCode: StatusCodes.Status500InternalServerError);

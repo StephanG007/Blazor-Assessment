@@ -4,10 +4,10 @@ public class ClinicSummaryResponse
 {
     public required bool Success { get; set; }
 
-    public List<ClinicSummaryDto> Clinics { get; set; } = new();
+    public List<ClinicDto> Clinics { get; set; } = new();
 }
 
-public record ClinicSummaryDto(
+public record ClinicDto(
     int Id,
     string Name,
     string? City,

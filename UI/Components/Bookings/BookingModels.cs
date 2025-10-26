@@ -1,4 +1,5 @@
 using System;
+using Contracts.Bookings;
 
 namespace UI.Components.Bookings;
 
@@ -45,7 +46,7 @@ public sealed record ClinicSummary(
     }
 }
 
-public sealed record TimeSlotOption(int Id, TimeOnly StartTime, TimeOnly EndTime, bool IsReserved = false)
+public sealed record TimeSlotOption(int Id, TimeOnly StartTime, TimeOnly EndTime, bool IsReserved = false, int? BookingId = null)
 {
     public string DisplayLabel => StartTime.ToString("HH:mm");
 }
@@ -55,3 +56,11 @@ public sealed record DailyAvailability(DateOnly Date, IReadOnlyList<TimeSlotOpti
 public sealed record ClinicSchedule(int ClinicId, IReadOnlyList<DailyAvailability> Availability);
 
 public sealed record ScheduledSlot(DateOnly Date, TimeSlotOption Slot);
+
+public enum BookingDialogAction
+{
+    Created,
+    Deleted
+}
+
+public sealed record BookingDialogResult(BookingDialogAction Action, BookingDetailsResponse? Details = null);
