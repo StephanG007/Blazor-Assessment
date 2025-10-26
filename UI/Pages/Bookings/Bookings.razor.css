@@ -54,10 +54,15 @@
     background: linear-gradient(180deg, rgba(255, 255, 255, 0.82) 0%, rgba(255, 255, 255, 0.95) 100%);
     box-shadow: 0 20px 40px rgba(32, 31, 69, 0.06);
     border: 1px solid rgba(103, 80, 164, 0.08);
+    width: 100%;
 }
 
 .booking-panel--clinics {
     backdrop-filter: blur(8px);
+}
+
+.booking-panel--availability {
+    min-height: clamp(28rem, 70vh, 52rem);
 }
 
 @media (max-width: 959.95px) {

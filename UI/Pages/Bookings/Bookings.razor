@@ -35,7 +35,7 @@
     </MudPaper>
 
     <MudGrid Spacing="3" Class="booking-grid">
-        <MudItem xs="12" lg="5">
+        <MudItem xs="12">
             <MudPaper Elevation="2" Class="booking-panel booking-panel--clinics">
                 <ClinicList Clinics="Clinics"
                             SelectedClinic="SelectedClinic"
@@ -43,8 +43,8 @@
             </MudPaper>
         </MudItem>
 
-        <MudItem xs="12" lg="7">
-            <MudPaper Elevation="2" Class="booking-panel">
+        <MudItem xs="12">
+            <MudPaper Elevation="2" Class="booking-panel booking-panel--availability">
                 <TimeslotSelector Clinic="SelectedClinic"
                                   Availability="ClinicAvailability"
                                   SelectedRange="SelectedRange"

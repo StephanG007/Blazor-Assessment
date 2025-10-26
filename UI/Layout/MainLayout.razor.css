@@ -35,12 +35,12 @@
 
 .layout-container {
     padding: clamp(1.5rem, 2.5vw, 3rem);
+    width: 100%;
+    margin: 0;
 }
 
 @media (min-width: 1280px) {
     .layout-container {
         padding-inline: 3.5rem;
-        max-width: 1280px;
-        margin: 0 auto;
     }
 }
