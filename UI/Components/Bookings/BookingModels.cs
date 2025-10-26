@@ -29,14 +29,17 @@ public sealed record ClinicSummary(
 
     public string? LogoDataUrl => string.IsNullOrWhiteSpace(LogoBase64)
         ? null
-        : $"{DetermineMimePrefix(LogoBase64!)}{LogoBase64}";
-
-    private static string DetermineMimePrefix(string base64)
+        : LogoBase64.StartsWith("data:", StringComparison.OrdinalIgnoreCase)
+            ? LogoBase64
+            : $"{DetectMimePrefix(LogoBase64)}{LogoBase64}";
+    
+    private static string DetectMimePrefix(string b64)
     {
-        if (base64.StartsWith("/9j/", StringComparison.Ordinal))
-        {
-            return "data:image/jpeg;base64,";
-        }
+        if (b64.StartsWith("/9j/", StringComparison.Ordinal)) return "data:image/jpeg;base64,";
+        if (b64.StartsWith("iVBOR", StringComparison.Ordinal)) return "data:image/png;base64,";
+        if (b64.StartsWith("R0lGOD", StringComparison.Ordinal)) return "data:image/gif;base64,";
+        if (b64.StartsWith("UklGR", StringComparison.Ordinal)) return "data:image/webp;base64,";
+        if (b64.StartsWith("PHN2Zy", StringComparison.Ordinal)) return "data:image/svg+xml;base64,";
 
         return "data:image/png;base64,";
     }

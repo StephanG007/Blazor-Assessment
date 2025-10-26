@@ -112,3 +112,7 @@ code {
 .form-floating > .form-control-plaintext:focus::placeholder, .form-floating > .form-control:focus::placeholder {
     text-align: start;
 }
+
+.mud-paper {
+    margin: 1.25rem !important;
+}

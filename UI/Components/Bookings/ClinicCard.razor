@@ -6,10 +6,19 @@
             <MudStack Row="true" AlignItems="AlignItems.Center" Class="clinic-card__header">
                 @if (!string.IsNullOrWhiteSpace(Clinic.LogoDataUrl))
                 {
-                    <MudAvatar Size="Size.Medium"
-                               Variant="Variant.Filled"
-                               ImageUrl="@Clinic.LogoDataUrl"
-                               Class="clinic-card__logo" />
+                    <MudAvatar Size="Size.Medium" Class="clinic-card__badge">
+                        @if (!string.IsNullOrWhiteSpace(Clinic.LogoDataUrl))
+                        {
+                            <MudImage Src="@Clinic.LogoDataUrl"
+                                      Alt="@($"{Clinic.Name} logo")"
+                                      Width="40" Height="40"
+                                      Class="object-contain" />
+                        }
+                        else
+                        {
+                            <MudIcon Icon="@Icons.Material.Filled.HealthAndSafety" />
+                        }
+                    </MudAvatar>
                 }
                 else
                 {
