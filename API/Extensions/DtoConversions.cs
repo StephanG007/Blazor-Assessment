@@ -50,9 +50,9 @@ public static class DtoConversions
         );
     }
 
-    public static ClinicSummaryDto ToDto(this Clinic clinic)
+    public static ClinicDto ToDto(this Clinic clinic)
     {
-        return new ClinicSummaryDto(
+        return new ClinicDto(
             clinic.Id,
             clinic.Name,
             clinic.Address?.City,

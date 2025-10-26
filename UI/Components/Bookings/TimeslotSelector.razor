@@ -66,8 +66,6 @@
                                              Class="@GetChipClass(slot)"
                                              Color="@GetChipColor(slot)"
                                              Variant="@GetChipVariant(day.Date, slot)"
-                                             Disabled="@slot.IsReserved"
-                                             Ripple="@(!slot.IsReserved)"
                                              Selected="@IsSelected(day.Date, slot)"
                                             OnClick="async () => await HandleSelection(day.Date, slot)">
                                         @slot.DisplayLabel
@@ -181,11 +179,6 @@
 
     private Task HandleSelection(DateOnly date, TimeSlotOption slot)
     {
-        if (slot.IsReserved)
-        {
-            return Task.CompletedTask;
-        }
-
         if (SelectedSlot is not null
             && SelectedSlot.Date == date
             && SelectedSlot.Slot.Id == slot.Id)

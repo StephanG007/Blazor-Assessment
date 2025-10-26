@@ -14,8 +14,8 @@
     <DialogContent>
         <MudStack Spacing="3">
             <MudStack>
-                <MudText Typo="Typo.h6">Confirm your booking</MudText>
-                <MudText Typo="Typo.body2">Review the appointment details and complete the required patient information.</MudText>
+                <MudText Typo="Typo.h6">@DialogHeading</MudText>
+                <MudText Typo="Typo.body2">@DialogDescription</MudText>
             </MudStack>
 
             <MudPaper Elevation="1" Class="pa-4">
@@ -43,7 +43,8 @@
                                   Label="Patient name"
                                   For="@(() => _request.PatientName)"
                                   Required="true"
-                                  Disabled="_isSubmitting"
+                                  Disabled="@(_isSubmitting || IsReadOnly)"
+                                  ReadOnly="@IsReadOnly"
                                   Immediate="true"
                                   Variant="Variant.Outlined" />
 
@@ -51,7 +52,8 @@
                                   Label="Patient email"
                                   For="@(() => _request.PatientEmail)"
                                   Required="true"
-                                  Disabled="_isSubmitting"
+                                  Disabled="@(_isSubmitting || IsReadOnly)"
+                                  ReadOnly="@IsReadOnly"
                                   Immediate="true"
                                   InputType="InputType.Email"
                                   Variant="Variant.Outlined" />
@@ -59,7 +61,8 @@
                     <MudTextField @bind-Value="_request.Notes"
                                   Label="Notes (optional)"
                                   For="@(() => _request.Notes)"
-                                  Disabled="_isSubmitting"
+                                  Disabled="@(_isSubmitting || IsReadOnly)"
+                                  ReadOnly="@IsReadOnly"
                                   Variant="Variant.Outlined"
                                   Lines="3" />
                 </MudStack>
@@ -69,7 +72,14 @@
 
     <DialogActions>
         <MudButton Variant="Variant.Text" Color="Color.Secondary" Disabled="_isSubmitting" OnClick="Cancel">Cancel</MudButton>
-        <MudButton Variant="Variant.Filled" Color="Color.Primary" Disabled="_isSubmitting" OnClick="SubmitAsync">Book slot</MudButton>
+        @if (IsReadOnly)
+        {
+            <MudButton Variant="Variant.Filled" Color="Color.Error" Disabled="_isSubmitting" OnClick="DeleteAsync">Delete booking</MudButton>
+        }
+        else
+        {
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" Disabled="_isSubmitting" OnClick="SubmitAsync">Book slot</MudButton>
+        }
     </DialogActions>
 </MudDialog>
 
@@ -83,12 +93,23 @@
     [Parameter, EditorRequired]
     public ScheduledSlot Slot { get; set; } = default!;
 
+    [Parameter]
+    public BookingDetailsResponse? ExistingBooking { get; set; }
+
+    [Parameter]
+    public int? BookingId { get; set; }
+
     private readonly CancellationTokenSource _cts = new();
     private MudForm? _form;
     private BookingRequest _request = new();
     private bool _isSubmitting;
     private string? _error;
 
+    private bool IsReadOnly => ExistingBooking is not null && BookingId.HasValue;
+    private string DialogHeading => IsReadOnly ? "Booking details" : "Confirm your booking";
+    private string DialogDescription => IsReadOnly
+        ? "Review the appointment details or delete the booking if it's no longer needed."
+        : "Review the appointment details and complete the required patient information.";
     private string AppointmentDate => Slot.Date.ToDateTime(TimeOnly.MinValue).ToString("dddd, MMM d, yyyy");
     private string AppointmentWindow => $"{Slot.Slot.StartTime:HH\\:mm} - {Slot.Slot.EndTime:HH\\:mm}";
 
@@ -100,17 +121,24 @@
         if (Slot is null)
             throw new InvalidOperationException("A slot must be supplied to book a timeslot.");
 
+        var defaultName = AuthState.CurrentUser?.DisplayName ?? string.Empty;
+        var defaultEmail = AuthState.CurrentUser?.Email ?? string.Empty;
+
         _request = new BookingRequest
         {
             ClinicId = Clinic.Id,
             AppointmentSlotId = Slot.Slot.Id,
-            PatientName = AuthState.CurrentUser?.DisplayName ?? string.Empty,
-            PatientEmail = AuthState.CurrentUser?.Email ?? string.Empty
+            PatientName = IsReadOnly ? ExistingBooking?.PatientName ?? string.Empty : defaultName,
+            PatientEmail = IsReadOnly ? ExistingBooking?.PatientEmail ?? string.Empty : defaultEmail,
+            Notes = IsReadOnly ? ExistingBooking?.Notes : null
         };
     }
 
     private async Task SubmitAsync()
     {
+        if (IsReadOnly)
+            return;
+
         if (_form is null)
             return;
 
@@ -132,7 +160,7 @@
                 return;
             }
 
-            DialogReference.Close(DialogResult.Ok(confirmation));
+            DialogReference.Close(DialogResult.Ok(new BookingDialogResult(BookingDialogAction.Created, confirmation)));
         }
         catch (OperationCanceledException)
         {
@@ -145,6 +173,39 @@
         catch
         {
             _error = "We couldn't complete your booking right now. Please try again.";
+        }
+        finally
+        {
+            _isSubmitting = false;
+        }
+    }
+
+    private async Task DeleteAsync()
+    {
+        if (!IsReadOnly || BookingId is null)
+        {
+            return;
+        }
+
+        _isSubmitting = true;
+        _error = null;
+
+        try
+        {
+            await BookingApiClient.DeleteBookingAsync(BookingId.Value, _cts.Token);
+            DialogReference.Close(DialogResult.Ok(new BookingDialogResult(BookingDialogAction.Deleted)));
+        }
+        catch (OperationCanceledException)
+        {
+            // Dialog was closed, no action required.
+        }
+        catch (BookingRequestException ex)
+        {
+            _error = ex.Message;
+        }
+        catch
+        {
+            _error = "We couldn't delete the booking right now. Please try again.";
         }
         finally
         {

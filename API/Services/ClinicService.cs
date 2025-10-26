@@ -8,7 +8,7 @@ namespace API.Services;
 
 public class ClinicService(AppDbContext db) : IClinicService
 {
-    public async Task<List<ClinicSummaryDto>> GetClinics(CancellationToken cancellationToken)
+    public async Task<List<ClinicDto>> GetClinics(CancellationToken cancellationToken)
     {
         var clinics = await db.Clinics
             .AsNoTracking()

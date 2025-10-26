@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using API.Data;
 using API.Data.Entities;
 using API.Extensions;
@@ -10,14 +11,14 @@ namespace API.Services;
 
 public class BookingService(AppDbContext db) : IBookingService
 {
-    public async Task<IReadOnlyList<AvailableSlotResponse>> GetAvailableSlotsAsync(int clinicId, DateOnly? startDate, DateOnly? endDate, CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<AvailableSlotResponse>?> GetAvailableSlotsAsync(int clinicId, DateOnly? startDate, DateOnly? endDate, CancellationToken cancellationToken = default)
     {
         var clinicExists = await db.Clinics
             .AsNoTracking()
             .AnyAsync(clinic => clinic.Id == clinicId, cancellationToken);
 
         if (!clinicExists)
-            throw new KeyNotFoundException($"Clinic with id {clinicId} was not found.");
+            return null;
         
         var dayStart = startDate?.ToDateTime(TimeOnly.MinValue) ?? DateTime.Today;
         var dayEnd = endDate?.ToDateTime(TimeOnly.MaxValue) ?? DateTime.Today.AddDays(7);
@@ -30,7 +31,12 @@ public class BookingService(AppDbContext db) : IBookingService
                 && slot.StartTime >= dayStart
                 && slot.StartTime < dayEnd)
             .OrderBy(slot => slot.StartTime)
-            .Select(slot => new AvailableSlotResponse(slot.Id, slot.StartTime, slot.EndTime, slot.Booking != null))
+            .Select(slot => new AvailableSlotResponse(
+                slot.Id,
+                slot.StartTime,
+                slot.EndTime,
+                slot.Booking != null,
+                slot.Booking != null ? slot.Booking.Id : null))
             .ToListAsync(cancellationToken);
 
         return availableSlots;
@@ -72,5 +78,19 @@ public class BookingService(AppDbContext db) : IBookingService
                 .ThenInclude(a => a.Clinic)
             .Select(b => b.ToDetailsResponse())
             .FirstOrDefaultAsync(ct);
+    }
+
+    public async Task DeleteBookingAsync(int bookingId, CancellationToken ct = default)
+    {
+        var booking = await db.Bookings
+            .FirstOrDefaultAsync(b => b.Id == bookingId, ct);
+
+        if (booking is null)
+        {
+            throw new KeyNotFoundException($"Booking with id {bookingId} was not found.");
+        }
+
+        db.Bookings.Remove(booking);
+        await db.SaveChangesAsync(ct);
     }
 }

@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using API.Data;
 using API.Data.Entities;
 using API.Services;
@@ -112,9 +113,9 @@ public class BookingServiceTests
         // Assert
         slots.Should().BeEquivalentTo(new[]
         {
-            new AvailableSlotResponse(availableEarly.Id, availableEarly.StartTime, availableEarly.EndTime, false),
-            new AvailableSlotResponse(bookedSlot.Id,     bookedSlot.StartTime,     bookedSlot.EndTime,     true),
-            new AvailableSlotResponse(availableLate.Id,  availableLate.StartTime,  availableLate.EndTime,  false),
+            new AvailableSlotResponse(availableEarly.Id, availableEarly.StartTime, availableEarly.EndTime, false, null),
+            new AvailableSlotResponse(bookedSlot.Id,     bookedSlot.StartTime,     bookedSlot.EndTime,     true,  booking.Id),
+            new AvailableSlotResponse(availableLate.Id,  availableLate.StartTime,  availableLate.EndTime,  false, null),
         }, opts => opts.WithStrictOrdering());
     }
 
@@ -205,5 +206,50 @@ public class BookingServiceTests
         // assert
         await act.Should().ThrowAsync<Exception>()
             .WithMessage($"Appointment slot with id {slot.Id} was not available.");
+    }
+
+    [Theory, AutoDbData]
+    public async Task DeleteBookingAsync_removes_existing_booking(
+        AppDbContext context, IFixture fixture, Clinic clinic)
+    {
+        // arrange
+        context.Clinics.Add(clinic);
+        await context.SaveChangesAsync();
+
+        var slot = fixture.Build<AppointmentSlot>()
+            .With(s => s.ClinicId, clinic.Id)
+            .Create();
+
+        context.AppointmentSlots.Add(slot);
+        await context.SaveChangesAsync();
+
+        var booking = fixture.Build<Booking>()
+            .With(b => b.AppointmentSlotId, slot.Id)
+            .Create();
+
+        context.Bookings.Add(booking);
+        await context.SaveChangesAsync();
+
+        var service = new BookingService(context);
+
+        // act
+        await service.DeleteBookingAsync(booking.Id);
+
+        // assert
+        (await context.Bookings.CountAsync()).Should().Be(0);
+    }
+
+    [Theory, AutoDbData]
+    public async Task DeleteBookingAsync_throws_when_booking_not_found(AppDbContext context)
+    {
+        // arrange
+        var service = new BookingService(context);
+
+        // act
+        var act = async () => await service.DeleteBookingAsync(12345);
+
+        // assert
+        await act.Should().ThrowAsync<KeyNotFoundException>()
+            .WithMessage("Booking with id 12345 was not found.");
     }
 }
