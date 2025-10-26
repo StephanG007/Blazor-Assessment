@@ -8,9 +8,6 @@
 
   <ItemGroup>
     <PackageReference Include="Bogus" Version="35.6.4" />
-    <PackageReference Include="DevExpress.Blazor" Version="25.1.6" />
-    <PackageReference Include="DevExtreme.AspNet.Data" Version="5.1.0" />
-    <PackageReference Include="DevExtreme.AspNet.Mvc" Version="25.1.6" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="9.0.9" />
     <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="9.0.9" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.9" />

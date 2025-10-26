@@ -14,6 +14,8 @@ public class Clinic
 
     [MaxLength(15)]
     public string? PhoneNumber { get; set; }
+    
+    public string? LogoBase64 { get; set; }
 
     public ICollection<AppointmentSlot> AppointmentSlots { get; set; } = new List<AppointmentSlot>();
 }

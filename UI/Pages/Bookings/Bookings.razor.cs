@@ -82,7 +82,7 @@ public sealed partial class Bookings : ComponentBase
         }
     }
 
-    private void HandleClinicChanged(ClinicSummary clinic)
+    private void HandleClinicChanged(ClinicSummary? clinic)
     {
         SelectedClinic = clinic;
         var dates = AvailableDates;

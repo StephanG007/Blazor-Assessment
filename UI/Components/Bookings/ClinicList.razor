@@ -32,7 +32,7 @@
     public ClinicSummary? SelectedClinic { get; set; }
 
     [Parameter]
-    public EventCallback<ClinicSummary> SelectedClinicChanged { get; set; }
+    public EventCallback<ClinicSummary?> SelectedClinicChanged { get; set; }
 
     private bool IsSelected(ClinicSummary clinic) => SelectedClinic?.Id == clinic.Id;
 
