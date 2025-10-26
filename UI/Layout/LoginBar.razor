@@ -6,7 +6,7 @@
 @implements IDisposable
 
 <div class="login-bar">
-    @if (currentUser is null)
+    @if (_currentUser is null)
     {
         <EditForm EditContext="_editContext" OnValidSubmit="HandleLoginAsync" class="login-form">
             <DataAnnotationsValidator />
@@ -14,46 +14,46 @@
                 <div class="dx-field login-field">
                     <InputText id="login-email"
                                class="dx-texteditor dx-editor-outlined"
-                               @bind-Value="loginModel.Email"
-                               disabled="@isBusy"
+                               @bind-Value="_loginModel.Email"
+                               disabled="@_isBusy"
                                placeholder="Email"
                                type="email"
                                autocomplete="username" />
-                    <ValidationMessage For="() => loginModel.Email" class="validation" />
+                    <ValidationMessage For="() => _loginModel.Email" class="validation" />
                 </div>
                 <div class="dx-field login-field">
                     <InputText id="login-password"
                                class="dx-texteditor dx-editor-outlined"
-                               @bind-Value="loginModel.Password"
-                               disabled="@isBusy"
+                               @bind-Value="_loginModel.Password"
+                               disabled="@_isBusy"
                                type="password"
                                placeholder="Password"
                                autocomplete="current-password" />
-                    <ValidationMessage For="() => loginModel.Password" class="validation" />
+                    <ValidationMessage For="() => _loginModel.Password" class="validation" />
                 </div>
                 <button type="submit"
                         class="dx-button dx-button-mode-contained dx-button-type-default login-button"
-                        disabled="@isBusy">
-                    <span class="dx-button-content">@(isBusy ? "Signing in..." : "Log in")</span>
+                        disabled="@_isBusy">
+                    <span class="dx-button-content">@(_isBusy ? "Signing in..." : "Log in")</span>
                 </button>
             </div>
-            @if (!string.IsNullOrWhiteSpace(errorMessage))
+            @if (!string.IsNullOrWhiteSpace(_errorMessage))
             {
-                <div class="dx-invalid-message login-error">@errorMessage</div>
+                <div class="dx-invalid-message login-error">@_errorMessage</div>
             }
         </EditForm>
     }
     else
     {
         <div class="user-summary dx-card">
-            <div class="user-avatar" style="@BuildAvatarStyle(currentUser.ImageUrl)">
-                @GetInitial(currentUser.DisplayName)
+            <div class="user-avatar" style="@BuildAvatarStyle(_currentUser.ImageUrl)">
+                @GetInitial(_currentUser.DisplayName)
             </div>
-            <div class="user-name">@currentUser.DisplayName</div>
+            <div class="user-name">@_currentUser.DisplayName</div>
             <button type="button"
                     class="dx-button dx-button-mode-text dx-button-type-default logout-button"
                     @onclick="HandleLogout"
-                    disabled="@isBusy">
+                    disabled="@_isBusy">
                 <span class="dx-button-content">Log out</span>
             </button>
         </div>
@@ -61,59 +61,54 @@
 </div>
 
 @code {
-    private LoginViewModel loginModel = new();
+    private LoginViewModel _loginModel = new();
     private EditContext? _editContext;
-    private bool isBusy;
-    private string? errorMessage;
-    private LoginResponse? currentUser;
+    private bool _isBusy;
+    private string? _errorMessage;
+    private LoginResponse? _currentUser;
 
     protected override void OnInitialized()
     {
-        currentUser = AuthState.CurrentUser;
+        _currentUser = AuthState.CurrentUser;
         AuthState.StateChanged += HandleAuthStateChanged;
-        _editContext = new EditContext(loginModel);
+        _editContext = new EditContext(_loginModel);
     }
 
     private async Task HandleLoginAsync()
     {
-        errorMessage = null;
-        isBusy = true;
+        _errorMessage = null;
+        _isBusy = true;
 
         try
         {
-            var (success, error) = await AuthService.LoginAsync(loginModel.Email, loginModel.Password);
+            var (success, error) = await AuthService.LoginAsync(_loginModel.Email, _loginModel.Password);
 
             if (!success)
-            {
-                errorMessage = error;
-            }
+                _errorMessage = error;
             else
-            {
-                loginModel = new LoginViewModel();
-                _editContext = new EditContext(loginModel);
-            }
+                _editContext = new EditContext(_loginModel);
         }
         catch
         {
-            errorMessage = "We couldn't reach the server. Please try again.";
+            _errorMessage = "We couldn't reach the server. Please try again.";
         }
         finally
         {
-            isBusy = false;
+            _isBusy = false;
         }
     }
 
     private void HandleLogout()
     {
-        errorMessage = null;
-        isBusy = true;
+        _errorMessage = null;
+        _isBusy = true;
         AuthService.Logout();
-        isBusy = false;
+        _isBusy = false;
     }
 
     private void HandleAuthStateChanged()
     {
-        currentUser = AuthState.CurrentUser;
+        _currentUser = AuthState.CurrentUser;
         InvokeAsync(StateHasChanged);
     }
 

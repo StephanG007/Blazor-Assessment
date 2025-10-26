@@ -1,3 +1,4 @@
+using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using Contracts.Account;
@@ -16,18 +17,13 @@ public sealed class AuthService(HttpClient httpClient, AuthState authState)
 
         var response = await httpClient.PostAsJsonAsync("api/account/login", request, ct);
 
-        if (!response.IsSuccessStatusCode)
-        {
-            var errorMessage = await response.Content.ReadAsStringAsync(ct);
-            return (false, string.IsNullOrWhiteSpace(errorMessage) ? "Login failed." : errorMessage);
-        }
+        if (response.StatusCode == HttpStatusCode.Unauthorized)
+            return (false, "Invalid email or password");
 
         var loginResponse = await response.Content.ReadFromJsonAsync<LoginResponse>(cancellationToken: ct);
 
         if (loginResponse is null)
-        {
             return (false, "The server returned an unexpected response.");
-        }
 
         authState.SetUser(loginResponse);
         httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", loginResponse.Token);

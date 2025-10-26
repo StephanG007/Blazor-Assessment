@@ -16,50 +16,18 @@ public sealed class BookingApiClient(HttpClient httpClient)
     public async Task<IReadOnlyList<AvailableSlotResponse>> GetAvailabilityAsync(int clinicId, DateOnly startDate, DateOnly endDate, CancellationToken ct = default)
     {
         var query = $"startDate={startDate:yyyy-MM-dd}&endDate={endDate:yyyy-MM-dd}";
-        var endpoint = $"api/booking/clinics/{clinicId}/availability?{query}";
-        var slots = await httpClient.GetFromJsonAsync<List<AvailableSlotResponse>>(endpoint, SerializerOptions, ct);
-        return slots ?? [];
+        var url = $"api/booking/clinics/{clinicId}/availability?{query}";
+        
+        return await httpClient.GetFromJsonAsync<List<AvailableSlotResponse>>(url, SerializerOptions, ct) ?? [];
     }
 
-    public async Task<BookingDetailsResponse> CreateBookingAsync(BookingRequest request, CancellationToken ct = default)
+    public async Task<BookingDetailsResponse?> CreateBookingAsync(BookingRequest request, CancellationToken ct = default)
     {
         using var response = await httpClient.PostAsJsonAsync("api/booking/create", request, SerializerOptions, ct);
 
         if (response.IsSuccessStatusCode)
-        {
-            var confirmation = await response.Content.ReadFromJsonAsync<BookingDetailsResponse>(SerializerOptions, ct);
-            return confirmation ?? throw new InvalidOperationException("Received an empty booking confirmation from the server.");
-        }
-
-        ProblemDetailsPayload? problem = null;
-
-        try
-        {
-            problem = await response.Content.ReadFromJsonAsync<ProblemDetailsPayload>(SerializerOptions, ct);
-        }
-        catch (OperationCanceledException)
-        {
-            throw;
-        }
-        catch
-        {
-            // Ignore parsing failures and fall back to a generic message
-        }
-
-        var message = problem?.Detail;
-        if (string.IsNullOrWhiteSpace(message))
-        {
-            message = problem?.Title;
-        }
-
-        message ??= "We couldn't complete your booking right now. Please try again soon.";
-
-        throw new BookingRequestException(message, response.StatusCode);
-    }
-    private sealed record ProblemDetailsPayload
-    {
-        public string? Title { get; init; }
-
-        public string? Detail { get; init; }
+            throw new Exception("We couldn't complete your booking right now. Please try again soon.");
+        
+        return await response.Content.ReadFromJsonAsync<BookingDetailsResponse>(SerializerOptions, ct);
     }
 }
