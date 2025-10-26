@@ -1,0 +1,20 @@
+.clinic-list__icon {
+    box-shadow: 0 10px 24px rgba(103, 80, 164, 0.2);
+}
+
+.clinic-list__title {
+    font-weight: 600;
+}
+
+.clinic-list__subtitle {
+    color: rgba(28, 27, 31, 0.64);
+}
+
+.clinic-list__count {
+    font-weight: 600;
+}
+
+.clinic-list__divider {
+    margin-block: 0.5rem 1rem;
+    opacity: 0.35;
+}

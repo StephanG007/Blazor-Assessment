@@ -75,6 +75,27 @@ public sealed partial class Bookings : ComponentBase
         SelectedSlot = slot;
     }
 
+    private string GetRangeSummary()
+    {
+        if (SelectedRange.Start is null || SelectedRange.End is null)
+        {
+            return "Select a date range";
+        }
+
+        var start = SelectedRange.Start.Value;
+        var end = SelectedRange.End.Value;
+
+        if (start.Date == end.Date)
+        {
+            return start.ToString("MMM d, yyyy");
+        }
+
+        var startFormat = start.ToString(start.Year == end.Year ? "MMM d" : "MMM d, yyyy");
+        var endFormat = end.ToString("MMM d, yyyy");
+
+        return $"{startFormat} - {endFormat}";
+    }
+
     private DateRange BuildDefaultRange()
     {
         var availability = ClinicAvailability;

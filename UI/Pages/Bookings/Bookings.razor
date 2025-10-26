@@ -3,19 +3,52 @@
 
 <PageTitle>Bookings</PageTitle>
 
-<MudStack Spacing="4" Class="booking-page">
-    <MudPaper Elevation="1" Class="booking-section">
-        <ClinicList Clinics="Clinics"
-                    SelectedClinic="SelectedClinic"
-                    SelectedClinicChanged="HandleClinicChanged" />
+<MudStack Spacing="5" Class="booking-page">
+    <MudPaper Elevation="3" Class="booking-hero">
+        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="3">
+            <MudAvatar Color="Color.Primary"
+                       Variant="Variant.Filled"
+                       Icon="@Icons.Material.Filled.MedicalServices"
+                       Size="Size.Large"
+                       Class="booking-hero__avatar" />
+            <MudStack Spacing="1">
+                <MudText Typo="Typo.h4" Class="booking-hero__title">Plan your next clinic visit</MudText>
+                <MudText Typo="Typo.subtitle1" Class="booking-hero__subtitle">
+                    Choose a clinic and browse upcoming availability with our refreshed scheduling view.
+                </MudText>
+                <MudStack Row="true" Spacing="1" AlignItems="AlignItems.Center">
+                    <MudChip Color="Color.Secondary"
+                             Variant="Variant.Filled"
+                             StartIcon="@Icons.Material.Filled.LocalHospital">
+                        @(SelectedClinic?.Name ?? "No clinic selected")
+                    </MudChip>
+                    <MudChip Color="Color.Tertiary"
+                             Variant="Variant.Filled"
+                             StartIcon="@Icons.Material.Filled.CalendarMonth">
+                        @GetRangeSummary()
+                    </MudChip>
+                </MudStack>
+            </MudStack>
+        </MudStack>
     </MudPaper>
 
-    <MudPaper Elevation="1" Class="booking-section">
-        <TimeslotSelector Clinic="SelectedClinic"
-                          Availability="ClinicAvailability"
-                          SelectedRange="SelectedRange"
-                          SelectedRangeChanged="HandleRangeChanged"
-                          SelectedSlot="SelectedSlot"
-                          SelectedSlotChanged="HandleSlotChanged" />
-    </MudPaper>
+    <MudGrid Spacing="3" Class="booking-grid">
+        <MudItem xs="12" lg="5">
+            <MudPaper Elevation="2" Class="booking-panel booking-panel--clinics">
+                <ClinicList Clinics="Clinics"
+                            SelectedClinic="SelectedClinic"
+                            SelectedClinicChanged="HandleClinicChanged" />
+            </MudPaper>
+        </MudItem>
+        <MudItem xs="12" lg="7">
+            <MudPaper Elevation="2" Class="booking-panel">
+                <TimeslotSelector Clinic="SelectedClinic"
+                                  Availability="ClinicAvailability"
+                                  SelectedRange="SelectedRange"
+                                  SelectedRangeChanged="HandleRangeChanged"
+                                  SelectedSlot="SelectedSlot"
+                                  SelectedSlotChanged="HandleSlotChanged" />
+            </MudPaper>
+        </MudItem>
+    </MudGrid>
 </MudStack>

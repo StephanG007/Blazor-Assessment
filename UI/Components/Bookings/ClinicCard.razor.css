@@ -1,20 +1,40 @@
 .clinic-card {
     cursor: pointer;
-    border-radius: 16px;
-    transition: transform 150ms ease, box-shadow 150ms ease;
-    min-height: 140px;
+    border-radius: 22px;
+    transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease;
+    min-height: 180px;
     display: flex;
+    border: 1px solid rgba(103, 80, 164, 0.12);
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, rgba(255, 255, 255, 0.88) 100%);
 }
 
 .clinic-card:hover {
-    transform: translateY(-4px);
+    transform: translateY(-6px);
+    box-shadow: 0 18px 36px rgba(32, 31, 69, 0.12);
 }
 
 .clinic-card--selected {
     border: 2px solid var(--mud-palette-primary);
+    box-shadow: 0 24px 40px rgba(103, 80, 164, 0.18);
+}
+
+.clinic-card__content {
+    width: 100%;
+}
+
+.clinic-card__badge {
+    box-shadow: 0 10px 22px rgba(103, 80, 164, 0.24);
+}
+
+.clinic-card__title {
+    font-weight: 600;
+}
+
+.clinic-card__location {
+    color: rgba(28, 27, 31, 0.6);
 }
 
 .slot-summary {
-    font-weight: 500;
-    margin-top: 0.75rem;
+    font-weight: 600;
+    margin-top: 0.25rem;
 }
