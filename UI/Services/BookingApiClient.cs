@@ -1,4 +1,3 @@
-using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using Contracts.Bookings;
@@ -25,9 +24,11 @@ public sealed class BookingApiClient(HttpClient httpClient)
     {
         using var response = await httpClient.PostAsJsonAsync("api/booking/create", request, SerializerOptions, ct);
 
-        if (response.IsSuccessStatusCode)
-            throw new Exception("We couldn't complete your booking right now. Please try again soon.");
+        if (!response.IsSuccessStatusCode)
+            throw new Exception("Could not create booking details");
         
-        return await response.Content.ReadFromJsonAsync<BookingDetailsResponse>(SerializerOptions, ct);
+        var confirmation = await response.Content.ReadFromJsonAsync<BookingDetailsResponse>(SerializerOptions, ct);
+        
+        return confirmation;
     }
 }
