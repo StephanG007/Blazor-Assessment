@@ -19,8 +19,10 @@
             <MudChip T="string"
                      Color="Color.Secondary"
                      Variant="Variant.Outlined"
-                     Class="slot-summary"
-                     StartIcon="@Icons.Material.Filled.Schedule">
+                     Class="slot-summary">
+                <StartContent>
+                    <MudIcon Icon="@Icons.Material.Filled.Schedule" Size="Size.Small" />
+                </StartContent>
                 @Clinic.SlotSummary
             </MudChip>
         </MudStack>

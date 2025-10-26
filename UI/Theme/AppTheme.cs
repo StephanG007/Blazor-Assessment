@@ -17,7 +17,6 @@ public static class AppTheme
             Error = "#E4572E",
             Background = "#F6F7FB",
             Surface = "#FFFFFF",
-            SurfaceVariant = "#F1ECFF",
             AppbarBackground = "#FFFFFF",
             AppbarText = "#1C1B1F",
             DrawerBackground = "linear-gradient(180deg, #563B8D 0%, #201F45 100%)",

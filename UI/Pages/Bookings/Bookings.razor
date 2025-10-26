@@ -19,13 +19,17 @@
                 </MudText>
                 <MudStack Row="true" Spacing="1" AlignItems="AlignItems.Center">
                     <MudChip T="string" Color="Color.Secondary"
-                             Variant="Variant.Filled"
-                             StartIcon="@Icons.Material.Filled.LocalHospital">
+                             Variant="Variant.Filled">
+                        <StartContent>
+                            <MudIcon Icon="@Icons.Material.Filled.LocalHospital" Size="Size.Small" />
+                        </StartContent>
                         @(SelectedClinic?.Name ?? "No clinic selected")
                     </MudChip>
                     <MudChip T="string" Color="Color.Tertiary"
-                             Variant="Variant.Filled"
-                             StartIcon="@Icons.Material.Filled.CalendarMonth">
+                             Variant="Variant.Filled">
+                        <StartContent>
+                            <MudIcon Icon="@Icons.Material.Filled.CalendarMonth" Size="Size.Small" />
+                        </StartContent>
                         @GetRangeSummary()
                     </MudChip>
                 </MudStack>
