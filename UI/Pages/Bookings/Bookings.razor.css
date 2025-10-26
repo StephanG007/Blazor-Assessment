@@ -29,9 +29,15 @@
 }
 
 .booking-hero__chip {
+    display: flex;
     width: 100%;
     justify-content: flex-start;
+    align-items: center;
     gap: 0.5rem;
+}
+
+.booking-hero__chip :deep(.mud-chip-content) {
+    width: 100%;
 }
 
 .booking-hero__chip-icon {
