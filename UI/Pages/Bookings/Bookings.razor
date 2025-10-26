@@ -4,36 +4,6 @@
 <PageTitle>Bookings</PageTitle>
 
 <MudStack Spacing="5" Class="booking-page">
-    <MudPaper Elevation="3" Class="booking-hero">
-        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="3">
-            <MudAvatar Color="Color.Primary"
-                       Variant="Variant.Filled"
-                       Size="Size.Large"
-                       Class="booking-hero__avatar">
-                <MudIcon Icon="@Icons.Material.Filled.MedicalServices" />
-            </MudAvatar>
-
-            <MudStack Spacing="1">
-                <MudText Typo="Typo.h4" Class="booking-hero__title">Plan your next clinic visit</MudText>
-                <MudText Typo="Typo.subtitle1" Class="booking-hero__subtitle">
-                    Choose a clinic and browse upcoming availability with our refreshed scheduling view.
-                </MudText>
-
-                <MudStack Spacing="1" Class="booking-hero__chips">
-                    <MudChip T="string" Color="Color.Secondary" Variant="Variant.Filled" Class="booking-hero__chip">
-                        <MudIcon Icon="@Icons.Material.Filled.LocalHospital" Size="Size.Small" Class="booking-hero__chip-icon" />
-                        @(SelectedClinic?.Name ?? "No clinic selected")
-                    </MudChip>
-
-                    <MudChip T="string" Color="Color.Tertiary" Variant="Variant.Filled" Class="booking-hero__chip">
-                        <MudIcon Icon="@Icons.Material.Filled.CalendarMonth" Size="Size.Small" Class="booking-hero__chip-icon" />
-                        @GetRangeSummary()
-                    </MudChip>
-                </MudStack>
-            </MudStack>
-        </MudStack>
-    </MudPaper>
-
     <MudGrid Spacing="3" Class="booking-grid">
         <MudItem xs="12">
             <MudPaper Elevation="2" Class="booking-panel booking-panel--clinics">
