@@ -19,14 +19,14 @@
                     Choose a clinic and browse upcoming availability with our refreshed scheduling view.
                 </MudText>
 
-                <MudStack Row="true" Spacing="1" AlignItems="AlignItems.Center">
-                    <MudChip T="string" Color="Color.Secondary" Variant="Variant.Filled">
-                        <MudIcon Icon="@Icons.Material.Filled.LocalHospital" Size="Size.Small" style="margin-right:6px;" />
+                <MudStack Spacing="1" Class="booking-hero__chips">
+                    <MudChip T="string" Color="Color.Secondary" Variant="Variant.Filled" Class="booking-hero__chip">
+                        <MudIcon Icon="@Icons.Material.Filled.LocalHospital" Size="Size.Small" Class="booking-hero__chip-icon" />
                         @(SelectedClinic?.Name ?? "No clinic selected")
                     </MudChip>
 
-                    <MudChip T="string" Color="Color.Tertiary" Variant="Variant.Filled">
-                        <MudIcon Icon="@Icons.Material.Filled.CalendarMonth" Size="Size.Small" style="margin-right:6px;" />
+                    <MudChip T="string" Color="Color.Tertiary" Variant="Variant.Filled" Class="booking-hero__chip">
+                        <MudIcon Icon="@Icons.Material.Filled.CalendarMonth" Size="Size.Small" Class="booking-hero__chip-icon" />
                         @GetRangeSummary()
                     </MudChip>
                 </MudStack>

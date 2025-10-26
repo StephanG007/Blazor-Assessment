@@ -24,6 +24,20 @@
     color: rgba(28, 27, 31, 0.68);
 }
 
+.booking-hero__chips {
+    width: 100%;
+}
+
+.booking-hero__chip {
+    width: 100%;
+    justify-content: flex-start;
+    gap: 0.5rem;
+}
+
+.booking-hero__chip-icon {
+    margin-right: 0.25rem;
+}
+
 .booking-grid {
     margin-top: clamp(1.25rem, 2vw, 2.25rem);
 }
