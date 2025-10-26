@@ -12,10 +12,9 @@
 
     <MudPaper Elevation="1" Class="booking-section">
         <TimeslotSelector Clinic="SelectedClinic"
-                          AvailableDates="AvailableDates"
-              c            SelectedDate="SelectedDate"
-                          SelectedDateChanged="HandleDateChanged"
-                          TimeSlots="DisplayedSlots"
+                          Availability="ClinicAvailability"
+                          SelectedRange="SelectedRange"
+                          SelectedRangeChanged="HandleRangeChanged"
                           SelectedSlot="SelectedSlot"
                           SelectedSlotChanged="HandleSlotChanged" />
     </MudPaper>

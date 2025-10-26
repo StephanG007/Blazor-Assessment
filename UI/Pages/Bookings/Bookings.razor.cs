@@ -1,4 +1,6 @@
 using Microsoft.AspNetCore.Components;
+using MudBlazor;
+using System.Linq;
 using UI.Components.Bookings;
 
 namespace UI.Pages.Bookings;
@@ -17,48 +19,25 @@ public sealed partial class Bookings : ComponentBase
 
     private ClinicSummary? SelectedClinic { get; set; }
 
-    private DateOnly SelectedDate { get; set; }
+    private DateRange SelectedRange { get; set; } = new();
 
-    private TimeSlotOption? SelectedSlot { get; set; }
+    private ScheduledSlot? SelectedSlot { get; set; }
 
-    private IReadOnlyList<DateOnly> AvailableDates
+    private IReadOnlyList<DailyAvailability> ClinicAvailability
     {
         get
         {
             if (SelectedClinic is null)
             {
-                return Array.Empty<DateOnly>();
+                return Array.Empty<DailyAvailability>();
             }
 
             if (!_mockSchedule.TryGetValue(SelectedClinic.Id, out var schedule))
             {
-                return Array.Empty<DateOnly>();
+                return Array.Empty<DailyAvailability>();
             }
 
-            return schedule.Availability
-                .Select(a => a.Date)
-                .OrderBy(d => d)
-                .ToList();
-        }
-    }
-
-    private IReadOnlyList<TimeSlotOption> DisplayedSlots
-    {
-        get
-        {
-            if (SelectedClinic is null)
-            {
-                return Array.Empty<TimeSlotOption>();
-            }
-
-            if (!_mockSchedule.TryGetValue(SelectedClinic.Id, out var schedule))
-            {
-                return Array.Empty<TimeSlotOption>();
-            }
-
-            return schedule.Availability
-                .FirstOrDefault(day => day.Date == SelectedDate)?.Slots
-                ?? Array.Empty<TimeSlotOption>();
+            return schedule.Availability;
         }
     }
 
@@ -75,30 +54,41 @@ public sealed partial class Bookings : ComponentBase
             return;
         }
 
-        var dates = AvailableDates;
-        if (dates.Count > 0)
-        {
-            SelectedDate = dates[0];
-        }
+        SelectedRange = BuildDefaultRange();
     }
 
     private void HandleClinicChanged(ClinicSummary? clinic)
     {
         SelectedClinic = clinic;
-        var dates = AvailableDates;
-        SelectedDate = dates.Count > 0 ? dates[0] : default;
+        SelectedRange = BuildDefaultRange();
         SelectedSlot = null;
     }
 
-    private void HandleDateChanged(DateOnly date)
+    private void HandleRangeChanged(DateRange range)
     {
-        SelectedDate = date;
+        SelectedRange = range ?? new DateRange();
         SelectedSlot = null;
     }
 
-    private void HandleSlotChanged(TimeSlotOption? slot)
+    private void HandleSlotChanged(ScheduledSlot? slot)
     {
         SelectedSlot = slot;
+    }
+
+    private DateRange BuildDefaultRange()
+    {
+        var availability = ClinicAvailability;
+        if (availability.Count == 0)
+        {
+            return new DateRange();
+        }
+
+        var first = availability.Min(a => a.Date);
+        var last = availability.Max(a => a.Date);
+
+        return new DateRange(
+            first.ToDateTime(TimeOnly.MinValue),
+            last.ToDateTime(TimeOnly.MinValue));
     }
 
     private static IReadOnlyDictionary<Guid, ClinicSchedule> BuildMockSchedule()
