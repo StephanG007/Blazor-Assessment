@@ -1,6 +1,9 @@
 @namespace UI.Components.Bookings
 
-<MudCard Class="@CardClass" Elevation="@(Selected ? 10 : 3)" @onclick="HandleClick">
+<MudCard Class="@CardClass"
+         Elevation="0"
+         Style="@CardStyle"
+         @onclick="HandleClick">
     <MudCardContent Class="clinic-card__content">
         <MudStack Class="clinic-card__stack">
             <MudStack Row="true" AlignItems="AlignItems.Center" Class="clinic-card__header">
@@ -67,6 +70,8 @@
     public EventCallback<ClinicSummary> OnSelected { get; set; }
 
     private string CardClass => Selected ? "clinic-card clinic-card--selected" : "clinic-card";
+
+    private string CardStyle => ClinicColorPalette.GetScheme(Clinic.Id).ToCssVariables("clinic");
 
     private Task HandleClick() => OnSelected.InvokeAsync(Clinic);
 }

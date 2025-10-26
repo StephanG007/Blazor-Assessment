@@ -1,7 +1,7 @@
 @using System.Linq
 @namespace UI.Components.Bookings
 
-<MudStack Spacing="3" Class="timeslot-selector">
+<MudStack Spacing="3" Class="timeslot-selector" Style="@TimeslotStyle">
     <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Class="timeslot-header">
         <MudStack Class="timeslot-header__content">
             <MudText Typo="Typo.h5" Class="timeslot-title">
@@ -43,7 +43,7 @@
             @foreach (var day in FilteredAvailability)
             {
                 <MudItem xs="12" md="6">
-                    <MudPaper Elevation="@(IsDaySelected(day.Date) ? 6 : 2)"
+                    <MudPaper Elevation="0"
                               Class="@GetDayClass(day.Date)">
                         <MudStack Class="timeslot-day__stack">
                             <MudStack Row="true" AlignItems="AlignItems.Center" Class="timeslot-day__header">
@@ -195,6 +195,10 @@
 
         return SelectedSlotChanged.InvokeAsync(new ScheduledSlot(date, slot));
     }
+
+    private string TimeslotStyle => Clinic is null
+        ? string.Empty
+        : ClinicColorPalette.GetScheme(Clinic.Id).ToCssVariables("timeslot");
 
     private static string GetChipClass(TimeSlotOption slot) => slot.IsReserved
         ? "timeslot-chip timeslot-chip--reserved"
