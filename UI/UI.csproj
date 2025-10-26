@@ -9,8 +9,6 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="9.0.10" />
     <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" Version="9.0.10" PrivateAssets="all" />
-    <PackageReference Include="DevExpress.Blazor" Version="25.1.6" />
-    <PackageReference Include="DevExpress.Blazor.Themes" Version="25.1.6" />
   </ItemGroup>
 
   <ItemGroup>
