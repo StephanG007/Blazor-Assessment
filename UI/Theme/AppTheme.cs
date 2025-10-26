@@ -19,7 +19,7 @@ public static class AppTheme
             Surface = "#FFFFFF",
             AppbarBackground = "#FFFFFF",
             AppbarText = "#1C1B1F",
-            DrawerBackground = "linear-gradient(180deg, #563B8D 0%, #201F45 100%)",
+            DrawerBackground = "#3F2B7A",
             DrawerText = "#F8F9FF",
             ActionDefault = "#6750A4",
             ActionDisabledBackground = "rgba(103, 80, 164, 0.08)",
