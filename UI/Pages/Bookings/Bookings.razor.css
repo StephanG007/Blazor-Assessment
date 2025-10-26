@@ -1,5 +1,6 @@
 .booking-page {
-    padding: clamp(0.5rem, 1vw, 1.5rem) 0 4rem;
+    padding: clamp(1.25rem, 2vw, 2.5rem) clamp(1rem, 3vw, 3rem) 4rem;
+    row-gap: clamp(1.5rem, 2.5vw, 3rem);
 }
 
 .booking-hero {
@@ -24,7 +25,7 @@
 }
 
 .booking-grid {
-    margin-top: 0.5rem;
+    margin-top: clamp(1.25rem, 2vw, 2.25rem);
 }
 
 .booking-panel {
