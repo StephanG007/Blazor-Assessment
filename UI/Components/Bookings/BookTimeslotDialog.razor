@@ -5,7 +5,6 @@
 @using Contracts.Bookings
 @using UI.Services
 @using MudBlazor
-@using MudBlazor.Dialog
 @implements IDisposable
 
 @inject BookingApiClient BookingApiClient
@@ -155,7 +154,7 @@
 
     private void Cancel()
     {
-        DialogReference.Cancel();
+        DialogReference.Close();
     }
 
     public void Dispose()

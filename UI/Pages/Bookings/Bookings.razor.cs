@@ -184,17 +184,17 @@ public sealed partial class Bookings : ComponentBase, IDisposable
         var options = new DialogOptions
         {
             CloseButton = true,
-            DisableBackdropClick = true,
+            BackdropClick = false,
             MaxWidth = MaxWidth.Small,
             FullWidth = true
         };
 
-        var dialog = DialogService.Show<BookTimeslotDialog>("Book appointment", parameters, options);
+        var dialog = await DialogService.ShowAsync<BookTimeslotDialog>("Book appointment", parameters, options);
 
         DialogResult result;
         try
         {
-            result = await dialog.Result;
+            result = await dialog.Result ?? DialogResult.Cancel();
         }
         catch (TaskCanceledException)
         {
@@ -203,7 +203,7 @@ public sealed partial class Bookings : ComponentBase, IDisposable
             return;
         }
 
-        if (!result.Cancelled && result.Data is BookingDetailsResponse confirmation)
+        if (!result.Canceled && result.Data is BookingDetailsResponse confirmation)
         {
             ShowBookingSuccess(confirmation);
             SelectedSlot = null;
@@ -223,7 +223,7 @@ public sealed partial class Bookings : ComponentBase, IDisposable
     {
         Clinics = Array.Empty<ClinicSummary>();
         SelectedClinic = null;
-        SelectedRange = new();
+        SelectedRange = new DateRange();
         SelectedSlot = null;
     }
 
@@ -257,7 +257,7 @@ public sealed partial class Bookings : ComponentBase, IDisposable
 
         IsLoadingAvailability = true;
         AvailabilityError = null;
-        _currentAvailability = Array.Empty<DailyAvailability>();
+        _currentAvailability = [];
         _currentAvailabilityClinicId = null;
 
         await InvokeAsync(StateHasChanged);
