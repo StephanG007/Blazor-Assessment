@@ -1,0 +1,22 @@
+@page "/bookings"
+@using UI.Components.Bookings
+
+<PageTitle>Bookings</PageTitle>
+
+<MudStack Spacing="4" Class="booking-page">
+    <MudPaper Elevation="1" Class="booking-section">
+        <ClinicList Clinics="Clinics"
+                    SelectedClinic="SelectedClinic"
+                    SelectedClinicChanged="HandleClinicChanged" />
+    </MudPaper>
+
+    <MudPaper Elevation="1" Class="booking-section">
+        <TimeslotSelector Clinic="SelectedClinic"
+                          AvailableDates="AvailableDates"
+              c            SelectedDate="SelectedDate"
+                          SelectedDateChanged="HandleDateChanged"
+                          TimeSlots="DisplayedSlots"
+                          SelectedSlot="SelectedSlot"
+                          SelectedSlotChanged="HandleSlotChanged" />
+    </MudPaper>
+</MudStack>

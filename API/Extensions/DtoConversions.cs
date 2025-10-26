@@ -41,7 +41,7 @@ public static class DtoConversions
     public static BookingDetailsResponse ToDetailsResponse(this Booking booking)
     {
         return new BookingDetailsResponse(
-            booking.AppointmentSlot.Clinic.Name,
+            booking.AppointmentSlot.Clinic!.Name,
             booking.AppointmentSlot.StartTime,
             booking.AppointmentSlot.EndTime,
             booking.PatientName,
@@ -57,6 +57,7 @@ public static class DtoConversions
             clinic.Name,
             clinic.Address?.City,
             clinic.Address?.Province,
-            clinic.PhoneNumber);
+            clinic.PhoneNumber,
+            clinic.LogoBase64);
     }
 }

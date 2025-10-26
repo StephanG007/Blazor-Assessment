@@ -1,97 +1,35 @@
-.layout-shell {
-    display: flex;
-    min-height: 100vh;
-    background-color: var(--dx-component-bg, #f5f6f8);
-}
-
-.layout-drawer {
-    width: 260px;
-    background-color: #1f2937;
+.main-drawer {
+    width: 280px;
+    background: linear-gradient(180deg, #1f2937 0%, #111827 100%);
     color: rgba(255, 255, 255, 0.92);
-    padding: 1.5rem 1rem;
-    transition: transform 0.3s ease;
-    z-index: 1040;
+    padding: 1.75rem 1.25rem 1rem;
 }
 
-.layout-drawer:not(.open) {
-    transform: translateX(-100%);
-}
-
-.drawer-header {
+.main-drawer .mud-drawer-header {
     margin-bottom: 1.5rem;
 }
 
-.drawer-title {
-    font-size: 1.2rem;
-    font-weight: 600;
-}
-
-.drawer-subtitle {
-    font-size: 0.9rem;
-    opacity: 0.75;
-}
-
-.layout-main {
-    display: flex;
-    flex-direction: column;
-    flex: 1;
-    min-width: 0;
-}
-
-.layout-appbar {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    padding: 0.75rem 1.5rem;
-    background-color: #ffffff;
-    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.08);
-}
-
-.layout-menu-button {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
+.main-appbar {
+    padding: 0 1.5rem;
 }
 
 .appbar-title {
-    font-size: 1.1rem;
+    margin-left: 0.75rem;
     font-weight: 600;
-    white-space: nowrap;
 }
 
-.appbar-spacer {
-    flex: 1;
+.appbar-menu {
+    margin-right: 0.5rem;
 }
 
 .layout-container {
-    flex: 1;
-    padding: 2rem clamp(1rem, 2vw, 2rem);
+    padding: clamp(1.25rem, 2vw, 2.5rem);
+    background-color: var(--mud-palette-background, #f5f6f8);
+    min-height: calc(100vh - 64px);
 }
 
-@media (min-width: 992px) {
-    .layout-drawer {
-        transform: translateX(0) !important;
-        position: static;
-        box-shadow: none;
-    }
-
-    .layout-menu-button {
-        display: none;
-    }
-}
-
-@media (max-width: 991.98px) {
-    .layout-drawer {
-        position: fixed;
-        top: 0;
-        bottom: 0;
-        box-shadow: 2px 0 12px rgba(15, 23, 42, 0.4);
-    }
-
+@media (min-width: 1280px) {
     .layout-container {
-        padding-top: 1.5rem;
+        padding-inline: 3rem;
     }
 }

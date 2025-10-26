@@ -1,0 +1,14 @@
+.booking-page {
+    padding: 1rem 0 4rem;
+}
+
+.booking-section {
+    padding: 1.5rem;
+    border-radius: 20px;
+}
+
+@media (min-width: 960px) {
+    .booking-section {
+        padding: 2rem;
+    }
+}

@@ -1,6 +1,19 @@
 @page "/"
 
-<PageTitle>Home</PageTitle>
+@inject NavigationManager Navigation
 
-<h1>Welcome</h1>
-<p>This placeholder page will be replaced as the new booking flow is implemented.</p>
+<PageTitle>Bookings</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.ExtraSmall" Class="index-redirect">
+    <MudPaper Elevation="1" Class="index-redirect__paper">
+        <MudProgressCircular Indeterminate="true" Color="Color.Primary" />
+        <MudText Typo="Typo.body1">Redirecting to the bookings experience…</MudText>
+    </MudPaper>
+</MudContainer>
+
+@code {
+    protected override void OnInitialized()
+    {
+        Navigation.NavigateTo("/bookings", replace: true);
+    }
+}

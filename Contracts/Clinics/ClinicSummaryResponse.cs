@@ -12,4 +12,5 @@ public record ClinicSummaryDto(
     string Name,
     string? City,
     string? Province,
-    string? PhoneNumber);
+    string? PhoneNumber,
+    string? ClinicLogo);

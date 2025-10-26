@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace API.Data.Entities;
 
 public class AppointmentSlot
@@ -11,8 +13,8 @@ public class AppointmentSlot
     public DateTime EndTime { get; init; }
 
     public bool IsActive { get; init; } = true;
-
-    public virtual Clinic Clinic { get; set; }
+    
+    public virtual Clinic? Clinic { get; set; }
     public virtual Booking? Booking { get; set; }
 
 }
