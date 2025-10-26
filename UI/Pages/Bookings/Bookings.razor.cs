@@ -256,28 +256,28 @@ public sealed partial class Bookings : ComponentBase, IDisposable
         }
     }
 
-    private (DateOnly start, DateOnly end) DetermineRequestedRange()
+    private (DateOnly Start, DateOnly End) DetermineRequestedRange()
     {
         if (SelectedRange.Start is null && SelectedRange.End is null)
         {
-            var start = DateOnly.FromDateTime(DateTime.Today);
-            return (start, start.AddDays(6));
+            var initialStart = DateOnly.FromDateTime(DateTime.Today);
+            return (initialStart, initialStart.AddDays(6));
         }
 
-        DateOnly start = SelectedRange.Start is not null
+        var rangeStart = SelectedRange.Start is not null
             ? DateOnly.FromDateTime(SelectedRange.Start.Value)
             : DateOnly.FromDateTime(SelectedRange.End!.Value).AddDays(-6);
 
-        DateOnly end = SelectedRange.End is not null
+        var rangeEnd = SelectedRange.End is not null
             ? DateOnly.FromDateTime(SelectedRange.End.Value)
-            : start.AddDays(6);
+            : rangeStart.AddDays(6);
 
-        if (end < start)
+        if (rangeEnd < rangeStart)
         {
-            (start, end) = (end, start);
+            (rangeStart, rangeEnd) = (rangeEnd, rangeStart);
         }
 
-        return (start, end);
+        return (rangeStart, rangeEnd);
     }
 
     private static IReadOnlyList<DailyAvailability> BuildAvailability(IEnumerable<AvailableSlotResponse> slots)

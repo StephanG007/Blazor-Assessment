@@ -67,7 +67,7 @@
                                              Color="@GetChipColor(slot)"
                                              Variant="@GetChipVariant(day.Date, slot)"
                                              Disabled="@slot.IsReserved"
-                                             DisableRipple="@slot.IsReserved"
+                                             Ripple="@(!slot.IsReserved)"
                                              Selected="@IsSelected(day.Date, slot)"
                                              OnClick="() => HandleSelection(day.Date, slot)">
                                         @slot.DisplayLabel
