@@ -5,6 +5,7 @@
 @using Contracts.Bookings
 @using UI.Services
 @using MudBlazor
+@using MudBlazor.Dialog
 @implements IDisposable
 
 @inject BookingApiClient BookingApiClient
@@ -74,7 +75,7 @@
 
 @code {
     [CascadingParameter]
-    private MudDialogInstance MudDialog { get; set; } = default!;
+    private IDialogReference DialogReference { get; set; } = default!;
 
     [Parameter, EditorRequired]
     public ClinicSummary Clinic { get; set; } = default!;
@@ -132,7 +133,7 @@
         try
         {
             var confirmation = await BookingApiClient.CreateBookingAsync(_request, _cts.Token);
-            MudDialog.Close(DialogResult.Ok(confirmation));
+            DialogReference.Close(DialogResult.Ok(confirmation));
         }
         catch (OperationCanceledException)
         {
@@ -154,7 +155,7 @@
 
     private void Cancel()
     {
-        MudDialog.Cancel();
+        DialogReference.Cancel();
     }
 
     public void Dispose()
