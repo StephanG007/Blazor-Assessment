@@ -27,11 +27,10 @@ public class BookingService(AppDbContext db) : IBookingService
             .Include(a => a.Booking)
             .Where(slot => slot.ClinicId == clinicId
                 && slot.IsActive
-                && !db.Bookings.Any(b => b.AppointmentSlotId == slot.Id)
                 && slot.StartTime >= dayStart
                 && slot.StartTime < dayEnd)
             .OrderBy(slot => slot.StartTime)
-            .Select(slot => new AvailableSlotResponse (slot.Id, slot.StartTime, slot.EndTime))
+            .Select(slot => new AvailableSlotResponse(slot.Id, slot.StartTime, slot.EndTime, slot.Booking != null))
             .ToListAsync(cancellationToken);
 
         return availableSlots;

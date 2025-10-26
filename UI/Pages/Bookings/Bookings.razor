@@ -31,7 +31,7 @@
 
         <MudItem xs="12">
             <MudPaper Elevation="2" Class="booking-panel booking-panel--availability">
-                @if (IsLoadingClinics)
+                @if (IsLoadingAvailability)
                 {
                     <MudStack AlignItems="AlignItems.Center"
                               Justify="Justify.Center"
@@ -39,6 +39,10 @@
                         <MudProgressCircular Color="Color.Secondary" Indeterminate="true" />
                         <MudText Typo="Typo.subtitle1">Preparing availability…</MudText>
                     </MudStack>
+                }
+                else if (!string.IsNullOrWhiteSpace(AvailabilityError))
+                {
+                    <MudAlert Severity="Severity.Error" Elevation="0">@AvailabilityError</MudAlert>
                 }
                 else if (!string.IsNullOrWhiteSpace(ClinicsError))
                 {

@@ -12,9 +12,10 @@ public sealed class BookingApiClient(HttpClient httpClient)
     public Task<ClinicSummaryResponse?> GetClinicsAsync(CancellationToken ct = default) =>
         httpClient.GetFromJsonAsync<ClinicSummaryResponse>("api/clinics", SerializerOptions, ct);
 
-    public async Task<IReadOnlyList<AvailableSlotResponse>> GetAvailabilityAsync(int clinicId, DateOnly date, CancellationToken ct = default)
+    public async Task<IReadOnlyList<AvailableSlotResponse>> GetAvailabilityAsync(int clinicId, DateOnly startDate, DateOnly endDate, CancellationToken ct = default)
     {
-        var endpoint = $"api/booking/clinics/{clinicId}/availability?date={date:yyyy-MM-dd}";
+        var query = $"startDate={startDate:yyyy-MM-dd}&endDate={endDate:yyyy-MM-dd}";
+        var endpoint = $"api/booking/clinics/{clinicId}/availability?{query}";
         var slots = await httpClient.GetFromJsonAsync<List<AvailableSlotResponse>>(endpoint, SerializerOptions, ct);
         return slots ?? [];
     }

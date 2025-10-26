@@ -63,10 +63,11 @@
                                 {
                                     <MudChip T="TimeSlotOption"
                                              Value="slot"
-                                             Class="timeslot-chip"
-                                             Color="Color.Secondary"
-                                             Variant="@(IsSelected(day.Date, slot) ? Variant.Filled : Variant.Outlined)"
+                                             Class="@GetChipClass(slot)"
+                                             Color="@GetChipColor(slot)"
+                                             Variant="@GetChipVariant(day.Date, slot)"
                                              Disabled="@slot.IsReserved"
+                                             DisableRipple="@slot.IsReserved"
                                              Selected="@IsSelected(day.Date, slot)"
                                              OnClick="() => HandleSelection(day.Date, slot)">
                                         @slot.DisplayLabel
@@ -194,4 +195,18 @@
 
         return SelectedSlotChanged.InvokeAsync(new ScheduledSlot(date, slot));
     }
+
+    private static string GetChipClass(TimeSlotOption slot) => slot.IsReserved
+        ? "timeslot-chip timeslot-chip--reserved"
+        : "timeslot-chip";
+
+    private static Color GetChipColor(TimeSlotOption slot) => slot.IsReserved
+        ? Color.Error
+        : Color.Secondary;
+
+    private Variant GetChipVariant(DateOnly date, TimeSlotOption slot) => slot.IsReserved
+        ? Variant.Outlined
+        : IsSelected(date, slot)
+            ? Variant.Filled
+            : Variant.Outlined;
 }
