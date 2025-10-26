@@ -1,14 +1,46 @@
 .booking-page {
-    padding: 1rem 0 4rem;
+    padding: clamp(0.5rem, 1vw, 1.5rem) 0 4rem;
 }
 
-.booking-section {
-    padding: 1.5rem;
-    border-radius: 20px;
+.booking-hero {
+    padding: clamp(1.75rem, 3vw, 2.75rem);
+    border-radius: 28px;
+    background: linear-gradient(135deg, rgba(103, 80, 164, 0.16) 0%, rgba(94, 137, 255, 0.24) 100%);
+    color: #1c1b1f;
 }
 
-@media (min-width: 960px) {
-    .booking-section {
-        padding: 2rem;
+.booking-hero__avatar {
+    box-shadow: 0 12px 30px rgba(103, 80, 164, 0.28);
+}
+
+.booking-hero__title {
+    font-weight: 600;
+    letter-spacing: 0.01em;
+}
+
+.booking-hero__subtitle {
+    max-width: 32rem;
+    color: rgba(28, 27, 31, 0.68);
+}
+
+.booking-grid {
+    margin-top: 0.5rem;
+}
+
+.booking-panel {
+    padding: clamp(1.75rem, 2.5vw, 2.5rem);
+    border-radius: 24px;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.82) 0%, rgba(255, 255, 255, 0.95) 100%);
+    box-shadow: 0 20px 40px rgba(32, 31, 69, 0.06);
+    border: 1px solid rgba(103, 80, 164, 0.08);
+}
+
+.booking-panel--clinics {
+    backdrop-filter: blur(8px);
+}
+
+@media (max-width: 959.95px) {
+    .booking-panel {
+        padding: 1.5rem;
     }
 }

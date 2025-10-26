@@ -22,3 +22,5 @@ public sealed record TimeSlotOption(TimeOnly StartTime, bool IsReserved = false)
 public sealed record DailyAvailability(DateOnly Date, IReadOnlyList<TimeSlotOption> Slots);
 
 public sealed record ClinicSchedule(Guid ClinicId, IReadOnlyList<DailyAvailability> Availability);
+
+public sealed record ScheduledSlot(DateOnly Date, TimeSlotOption Slot);

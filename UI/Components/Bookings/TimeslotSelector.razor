@@ -1,54 +1,83 @@
+@using System.Linq
 @namespace UI.Components.Bookings
 
-<MudStack Spacing="2">
-    <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
-        <MudText Typo="Typo.h5">
-            @if (Clinic is null)
-            {
-                <text>Select a clinic</text>
-            }
-            else
-            {
-                <text>Available Slots for @Clinic.Name</text>
-            }
-        </MudText>
-        <MudDatePicker @bind-Date="DateSelection"
-                       Disabled="@DisableDatePicker"
-                       MaxDate="@MaxDate"
-                       MinDate="@MinDate"
-                       Class="timeslot-date-picker"
-                       Variant="Variant.Outlined" />
+<MudStack Spacing="3" Class="timeslot-selector">
+    <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Class="timeslot-header">
+        <MudStack Class="timeslot-header__content">
+            <MudText Typo="Typo.h5" Class="timeslot-title">
+                @if (Clinic is null)
+                {
+                    <text>Select a clinic</text>
+                }
+                else
+                {
+                    <text>Available slots for @Clinic.Name</text>
+                }
+            </MudText>
+            <MudText Typo="Typo.body2" Class="timeslot-subtitle">
+                Pick a date range to explore upcoming availability tailored to your selection.
+            </MudText>
+        </MudStack>
+        <MudDateRangePicker @bind-DateRange="DateRangeSelection"
+                            Disabled="@DisableDatePicker"
+                            MaxDate="@MaxDate"
+                            MinDate="@MinDate"
+                            Class="timeslot-date-picker"
+                            Variant="Variant.Outlined"
+                            Color="Color.Secondary" />
     </MudStack>
 
-    <MudText Typo="Typo.body2" Class="mud-text-secondary">Pick a date to explore available times for the selected clinic.</MudText>
     <MudDivider />
 
-    @if (TimeSlots?.Count > 0)
-    {
-        <MudChipSet T="TimeSlotOption"
-                    Class="timeslot-chipset">
-            @foreach (var slot in TimeSlots)
-            {
-                <MudChip T="TimeSlotOption"
-                         Value="slot"
-                         Class="timeslot-chip"
-                         Color="Color.Primary"
-                         Variant="Variant.Outlined"
-                         Disabled="@slot.IsReserved"
-                         Selected="@IsSelected(slot)"
-                         OnClick="() => HandleSelection(slot)">
-                    @slot.DisplayLabel
-                </MudChip>
-            }
-        </MudChipSet>
-    }
-    else if (Clinic is null)
+    @if (Clinic is null)
     {
         <MudAlert Severity="Severity.Info" Elevation="0">Choose a clinic to view availability.</MudAlert>
     }
+    else if (FilteredAvailability.Count == 0)
+    {
+        <MudAlert Severity="Severity.Warning" Elevation="0">There are no available slots within the selected range.</MudAlert>
+    }
     else
     {
-        <MudAlert Severity="Severity.Warning" Elevation="0">There are no available slots for the selected date.</MudAlert>
+        <MudGrid Spacing="2">
+            @foreach (var day in FilteredAvailability)
+            {
+                <MudItem xs="12" md="6">
+                    <MudPaper Elevation="@(IsDaySelected(day.Date) ? 6 : 2)"
+                              Class="@GetDayClass(day.Date)">
+                        <MudStack Class="timeslot-day__stack">
+                            <MudStack Row="true" AlignItems="AlignItems.Center" Class="timeslot-day__header">
+                                <MudAvatar Size="Size.Small"
+                                           Color="Color.Secondary"
+                                           Variant="Variant.Filled"
+                                           Class="timeslot-day__avatar">
+                                    <MudIcon Icon="@Icons.Material.Filled.CalendarToday" />
+                                </MudAvatar>
+                                <MudStack>
+                                    <MudText Typo="Typo.subtitle1" Class="timeslot-day__title">@FormatDate(day.Date)</MudText>
+                                    <MudText Typo="Typo.body2" Class="timeslot-day__meta">@GetAvailabilitySummary(day)</MudText>
+                                </MudStack>
+                            </MudStack>
+                            <MudChipSet T="TimeSlotOption" Class="timeslot-chipset">
+                                @foreach (var slot in day.Slots)
+                                {
+                                    <MudChip T="TimeSlotOption"
+                                             Value="slot"
+                                             Class="timeslot-chip"
+                                             Color="Color.Secondary"
+                                             Variant="@(IsSelected(day.Date, slot) ? Variant.Filled : Variant.Outlined)"
+                                             Disabled="@slot.IsReserved"
+                                             Selected="@IsSelected(day.Date, slot)"
+                                             OnClick="() => HandleSelection(day.Date, slot)">
+                                        @slot.DisplayLabel
+                                    </MudChip>
+                                }
+                            </MudChipSet>
+                        </MudStack>
+                    </MudPaper>
+                </MudItem>
+            }
+        </MudGrid>
     }
 </MudStack>
 
@@ -57,61 +86,112 @@
     public ClinicSummary? Clinic { get; set; }
 
     [Parameter]
-    public IReadOnlyList<DateOnly> AvailableDates { get; set; } = Array.Empty<DateOnly>();
+    public IReadOnlyList<DailyAvailability> Availability { get; set; } = Array.Empty<DailyAvailability>();
 
     [Parameter]
-    public DateOnly SelectedDate { get; set; }
+    public DateRange SelectedRange { get; set; } = new();
 
     [Parameter]
-    public EventCallback<DateOnly> SelectedDateChanged { get; set; }
+    public EventCallback<DateRange> SelectedRangeChanged { get; set; }
 
     [Parameter]
-    public IReadOnlyList<TimeSlotOption> TimeSlots { get; set; } = Array.Empty<TimeSlotOption>();
+    public ScheduledSlot? SelectedSlot { get; set; }
 
     [Parameter]
-    public TimeSlotOption? SelectedSlot { get; set; }
+    public EventCallback<ScheduledSlot?> SelectedSlotChanged { get; set; }
 
-    [Parameter]
-    public EventCallback<TimeSlotOption?> SelectedSlotChanged { get; set; }
-
-    private DateTime? DateSelection
+    private DateRange DateRangeSelection
     {
-        get => AvailableDates.Count == 0 ? null : SelectedDate.ToDateTime(TimeOnly.MinValue);
+        get => SelectedRange;
         set
         {
             if (value is null)
             {
+                if (SelectedRange.Start is null && SelectedRange.End is null)
+                {
+                    return;
+                }
+
+                _ = SelectedRangeChanged.InvokeAsync(new DateRange());
                 return;
             }
 
-            var chosen = DateOnly.FromDateTime(value.Value);
-            if (chosen != SelectedDate)
+            if (SelectedRange.Start == value.Start && SelectedRange.End == value.End)
             {
-                _ = SelectedDateChanged.InvokeAsync(chosen);
+                return;
             }
+
+            _ = SelectedRangeChanged.InvokeAsync(value);
         }
     }
 
-    private bool DisableDatePicker => Clinic is null || AvailableDates.Count == 0;
+    private IReadOnlyList<DailyAvailability> FilteredAvailability => Availability
+        .Where(day => IsWithinRange(day.Date))
+        .OrderBy(day => day.Date)
+        .ToList();
 
-    private DateTime? MinDate => AvailableDates.Count == 0 ? null : AvailableDates.Min().ToDateTime(TimeOnly.MinValue);
+    private bool DisableDatePicker => Clinic is null || Availability.Count == 0;
 
-    private DateTime? MaxDate => AvailableDates.Count == 0 ? null : AvailableDates.Max().ToDateTime(TimeOnly.MinValue);
+    private DateTime? MinDate => Availability.Count == 0
+        ? null
+        : Availability.Min(a => a.Date).ToDateTime(TimeOnly.MinValue);
 
-    private bool IsSelected(TimeSlotOption slot) => SelectedSlot is not null && SelectedSlot.StartTime == slot.StartTime;
+    private DateTime? MaxDate => Availability.Count == 0
+        ? null
+        : Availability.Max(a => a.Date).ToDateTime(TimeOnly.MinValue);
 
-    private Task HandleSelection(TimeSlotOption slot)
+    private static string FormatDate(DateOnly date) => date.ToDateTime(TimeOnly.MinValue).ToString("dddd, MMM d");
+
+    private string GetAvailabilitySummary(DailyAvailability day)
+    {
+        var available = day.Slots.Count(slot => !slot.IsReserved);
+        var total = day.Slots.Count;
+
+        return available switch
+        {
+            0 => "All slots reserved",
+            _ when available == total => $"{total} open slots",
+            _ => $"{available} of {total} slots available"
+        };
+    }
+
+    private bool IsSelected(DateOnly date, TimeSlotOption slot) => SelectedSlot is not null
+        && SelectedSlot.Date == date
+        && SelectedSlot.Slot.StartTime == slot.StartTime;
+
+    private bool IsDaySelected(DateOnly date) => SelectedSlot?.Date == date;
+
+    private string GetDayClass(DateOnly date) => IsDaySelected(date)
+        ? "timeslot-day timeslot-day--selected"
+        : "timeslot-day";
+
+    private bool IsWithinRange(DateOnly date)
+    {
+        if (SelectedRange.Start is null || SelectedRange.End is null)
+        {
+            return true;
+        }
+
+        var start = DateOnly.FromDateTime(SelectedRange.Start.Value);
+        var end = DateOnly.FromDateTime(SelectedRange.End.Value);
+
+        return date >= start && date <= end;
+    }
+
+    private Task HandleSelection(DateOnly date, TimeSlotOption slot)
     {
         if (slot.IsReserved)
         {
             return Task.CompletedTask;
         }
 
-        if (SelectedSlot is not null && SelectedSlot.StartTime == slot.StartTime)
+        if (SelectedSlot is not null
+            && SelectedSlot.Date == date
+            && SelectedSlot.Slot.StartTime == slot.StartTime)
         {
             return SelectedSlotChanged.InvokeAsync(null);
         }
 
-        return SelectedSlotChanged.InvokeAsync(slot);
+        return SelectedSlotChanged.InvokeAsync(new ScheduledSlot(date, slot));
     }
 }

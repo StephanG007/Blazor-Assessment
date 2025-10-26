@@ -1,8 +1,25 @@
 @namespace UI.Components.Bookings
 
-<MudStack Spacing="2">
-    <MudText Typo="Typo.h5">Clinics</MudText>
-    <MudText Typo="Typo.body2" Class="mud-text-secondary">Select a clinic to view available appointment times.</MudText>
+<MudStack Class="clinic-list">
+    <MudStack Row="true" AlignItems="AlignItems.Center" Class="clinic-list__header">
+        <MudAvatar Color="Color.Primary"
+                   Variant="Variant.Filled"
+                   Size="Size.Medium"
+                   Class="clinic-list__icon">
+            <MudIcon Icon="@Icons.Material.Filled.Apartment" />
+        </MudAvatar>
+        <MudStack>
+            <MudText Typo="Typo.h5" Class="clinic-list__title">Clinics</MudText>
+            <MudText Typo="Typo.body2" Class="clinic-list__subtitle">Select a clinic to view available appointment times.</MudText>
+        </MudStack>
+        <MudSpacer />
+        <MudChip T="string" Color="Color.Secondary" Variant="Variant.Outlined" Class="clinic-list__count">
+            @Clinics.Count @(" clinic" + (Clinics.Count == 1 ? string.Empty : "s"))
+        </MudChip>
+    </MudStack>
+
+    <MudDivider Class="clinic-list__divider" />
+
     <MudGrid Spacing="2">
         @if (Clinics.Count == 0)
         {
