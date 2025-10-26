@@ -1,0 +1,40 @@
+@namespace UI.Components.Bookings
+
+<MudStack Spacing="2">
+    <MudText Typo="Typo.h5">Clinics</MudText>
+    <MudText Typo="Typo.body2" Class="mud-text-secondary">Select a clinic to view available appointment times.</MudText>
+    <MudGrid GutterSize="GutterSize.Small">
+        @if (Clinics.Count == 0)
+        {
+            <MudItem xs="12">
+                <MudAlert Severity="Severity.Info" Elevation="0">No clinics are available.</MudAlert>
+            </MudItem>
+        }
+        else
+        {
+            @foreach (var clinic in Clinics)
+            {
+                <MudItem xs="12" sm="6" md="4" lg="3">
+                    <ClinicCard Clinic="clinic"
+                                Selected="@IsSelected(clinic)"
+                                OnSelected="OnClinicSelected" />
+                </MudItem>
+            }
+        }
+    </MudGrid>
+</MudStack>
+
+@code {
+    [Parameter]
+    public IReadOnlyList<ClinicSummary> Clinics { get; set; } = Array.Empty<ClinicSummary>();
+
+    [Parameter]
+    public ClinicSummary? SelectedClinic { get; set; }
+
+    [Parameter]
+    public EventCallback<ClinicSummary> SelectedClinicChanged { get; set; }
+
+    private bool IsSelected(ClinicSummary clinic) => SelectedClinic?.Id == clinic.Id;
+
+    private Task OnClinicSelected(ClinicSummary clinic) => SelectedClinicChanged.InvokeAsync(clinic);
+}

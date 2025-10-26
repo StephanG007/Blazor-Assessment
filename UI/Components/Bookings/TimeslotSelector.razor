@@ -1,0 +1,117 @@
+@namespace UI.Components.Bookings
+
+<MudStack Spacing="2">
+    <MudStack Direction="Row" AlignItems="Center" Justify="Space-between">
+        <MudText Typo="Typo.h5">
+            @if (Clinic is null)
+            {
+                <text>Select a clinic</text>
+            }
+            else
+            {
+                <text>Available Slots for @Clinic.Name</text>
+            }
+        </MudText>
+        <MudDatePicker @bind-Date="DateSelection"
+                       Disabled="@DisableDatePicker"
+                       DisableToolbar="true"
+                       InputIcon="@Icons.Material.Filled.CalendarToday"
+                       MaxDate="@MaxDate"
+                       MinDate="@MinDate"
+                       Class="timeslot-date-picker"
+                       Variant="Variant.Outlined"
+                       CloseOnSelection="true" />
+    </MudStack>
+
+    <MudText Typo="Typo.body2" Class="mud-text-secondary">Pick a date to explore available times for the selected clinic.</MudText>
+    <MudDivider />
+
+    @if (TimeSlots?.Count > 0)
+    {
+        <MudChipSet Class="timeslot-chipset" Mandatory="false" MultiSelection="false">
+            @foreach (var slot in TimeSlots)
+            {
+                <MudChip Class="timeslot-chip"
+                         Color="Color.Primary"
+                         Variant="Variant.Outlined"
+                         Disabled="@slot.IsReserved"
+                         Selected="@IsSelected(slot)"
+                         OnClick="() => HandleSelection(slot)">
+                    @slot.DisplayLabel
+                </MudChip>
+            }
+        </MudChipSet>
+    }
+    else if (Clinic is null)
+    {
+        <MudAlert Severity="Severity.Info" Elevation="0">Choose a clinic to view availability.</MudAlert>
+    }
+    else
+    {
+        <MudAlert Severity="Severity.Warning" Elevation="0">There are no available slots for the selected date.</MudAlert>
+    }
+</MudStack>
+
+@code {
+    [Parameter]
+    public ClinicSummary? Clinic { get; set; }
+
+    [Parameter]
+    public IReadOnlyList<DateOnly> AvailableDates { get; set; } = Array.Empty<DateOnly>();
+
+    [Parameter]
+    public DateOnly SelectedDate { get; set; }
+
+    [Parameter]
+    public EventCallback<DateOnly> SelectedDateChanged { get; set; }
+
+    [Parameter]
+    public IReadOnlyList<TimeSlotOption> TimeSlots { get; set; } = Array.Empty<TimeSlotOption>();
+
+    [Parameter]
+    public TimeSlotOption? SelectedSlot { get; set; }
+
+    [Parameter]
+    public EventCallback<TimeSlotOption?> SelectedSlotChanged { get; set; }
+
+    private DateTime? DateSelection
+    {
+        get => AvailableDates.Count == 0 ? null : SelectedDate.ToDateTime(TimeOnly.MinValue);
+        set
+        {
+            if (value is null)
+            {
+                return;
+            }
+
+            var chosen = DateOnly.FromDateTime(value.Value);
+            if (chosen != SelectedDate)
+            {
+                _ = SelectedDateChanged.InvokeAsync(chosen);
+            }
+        }
+    }
+
+    private bool DisableDatePicker => Clinic is null || AvailableDates.Count == 0;
+
+    private DateTime? MinDate => AvailableDates.Count == 0 ? null : AvailableDates.Min().ToDateTime(TimeOnly.MinValue);
+
+    private DateTime? MaxDate => AvailableDates.Count == 0 ? null : AvailableDates.Max().ToDateTime(TimeOnly.MinValue);
+
+    private bool IsSelected(TimeSlotOption slot) => SelectedSlot is not null && SelectedSlot.StartTime == slot.StartTime;
+
+    private Task HandleSelection(TimeSlotOption slot)
+    {
+        if (slot.IsReserved)
+        {
+            return Task.CompletedTask;
+        }
+
+        if (SelectedSlot is not null && SelectedSlot.StartTime == slot.StartTime)
+        {
+            return SelectedSlotChanged.InvokeAsync(null);
+        }
+
+        return SelectedSlotChanged.InvokeAsync(slot);
+    }
+}

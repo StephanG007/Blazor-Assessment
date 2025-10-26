@@ -1,38 +1,37 @@
 @inherits LayoutComponentBase
 
-<div class="dx-viewport layout-shell">
-    <aside class="layout-drawer @( _drawerOpen ? "open" : "" )">
-        <div class="drawer-header">
-            <div class="drawer-title">Clinic Booking</div>
-            <div class="drawer-subtitle">Plan your next visit</div>
-        </div>
+<MudLayout>
+    <MudDrawer @bind-Open="_drawerOpen"
+               Variant="DrawerVariant.Responsive"
+               Elevation="2"
+               Class="main-drawer">
+        <MudDrawerHeader>
+            <MudText Typo="Typo.h5">Clinic Booking</MudText>
+            <MudText Typo="Typo.subtitle2" Class="mud-text-secondary">Plan your next visit</MudText>
+        </MudDrawerHeader>
         <NavMenu />
-    </aside>
+    </MudDrawer>
 
-    <div class="layout-main">
-        <header class="layout-appbar">
-            <button type="button"
-                    class="dx-button dx-button-mode-text dx-button-has-icon layout-menu-button"
-                    aria-label="Toggle navigation"
-                    @onclick="ToggleDrawer">
-                <span class="dx-button-content"><i class="dx-icon dx-icon-menu"></i></span>
-            </button>
-            <span class="appbar-title">Clinic Booking Portal</span>
-            <div class="appbar-spacer"></div>
+    <MudMainContent>
+        <MudAppBar Elevation="2" Color="Color.Surface" Class="main-appbar">
+            <MudIconButton Icon="@Icons.Material.Filled.Menu"
+                           Color="Color.Inherit"
+                           Edge="Edge.Start"
+                           OnClick="ToggleDrawer"
+                           Class="appbar-menu" />
+            <MudText Typo="Typo.h6" Class="appbar-title">Clinic Booking Portal</MudText>
+            <MudSpacer />
             <LoginBar />
-        </header>
+        </MudAppBar>
 
-        <main class="layout-container">
+        <MudContainer MaxWidth="MaxWidth.False" Class="layout-container">
             @Body
-        </main>
-    </div>
-</div>
+        </MudContainer>
+    </MudMainContent>
+</MudLayout>
 
 @code {
-    private bool _drawerOpen = false;
+    private bool _drawerOpen = true;
 
-    private void ToggleDrawer()
-    {
-        _drawerOpen = !_drawerOpen;
-    }
+    private void ToggleDrawer() => _drawerOpen = !_drawerOpen;
 }

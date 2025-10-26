@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
+using MudBlazor.Services;
 using UI;
 using UI.Services;
 
@@ -14,5 +15,6 @@ builder.Services.AddScoped<AuthState>();
 builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<BookingApiClient>();
 builder.Services.AddScoped<UsersApiClient>();
+builder.Services.AddMudServices();
 
 await builder.Build().RunAsync();
