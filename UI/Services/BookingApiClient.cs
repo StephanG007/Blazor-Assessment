@@ -3,7 +3,6 @@ using System.Net.Http.Json;
 using System.Text.Json;
 using Contracts.Bookings;
 using Contracts.Clinics;
-using Microsoft.AspNetCore.Mvc;
 
 namespace UI.Services;
 
@@ -32,11 +31,11 @@ public sealed class BookingApiClient(HttpClient httpClient)
             return confirmation ?? throw new InvalidOperationException("Received an empty booking confirmation from the server.");
         }
 
-        ProblemDetails? problem = null;
+        ProblemDetailsPayload? problem = null;
 
         try
         {
-            problem = await response.Content.ReadFromJsonAsync<ProblemDetails>(SerializerOptions, ct);
+            problem = await response.Content.ReadFromJsonAsync<ProblemDetailsPayload>(SerializerOptions, ct);
         }
         catch (OperationCanceledException)
         {
@@ -56,5 +55,11 @@ public sealed class BookingApiClient(HttpClient httpClient)
         message ??= "We couldn't complete your booking right now. Please try again soon.";
 
         throw new BookingRequestException(message, response.StatusCode);
+    }
+    private sealed record ProblemDetailsPayload
+    {
+        public string? Title { get; init; }
+
+        public string? Detail { get; init; }
     }
 }
