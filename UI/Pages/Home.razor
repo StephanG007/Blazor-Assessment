@@ -1,5 +1,6 @@
 @page "/"
 @using System.ComponentModel.DataAnnotations
+@using System.Globalization
 @using System.Net
 @using Contracts.Account
 @using Contracts.Bookings
@@ -37,7 +38,10 @@
                 <DataAnnotationsValidator />
 
                 <section class="clinic-section">
-                    <div class="section-header">Choose a clinic</div>
+                    <header class="section-heading">
+                        <h2 class="section-title">Clinics</h2>
+                        <p class="section-caption">Select a clinic to view available slots.</p>
+                    </header>
                     <GuestNotice />
 
                     <DxListBox TData="ClinicSummaryDto"
@@ -53,37 +57,45 @@
                             <article class="clinic-card">
                                 <div class="clinic-card-header">
                                     <span class="clinic-name">@clinic.Name</span>
-                                    @if (SelectedClinicId == clinic.Id)
-                                    {
-                                        <span class="clinic-status">
-                                            @if (_isLoadingAvailability)
-                                            {
-                                                <span>Loading slots...</span>
-                                            }
-                                            else if (string.IsNullOrEmpty(_availabilityError) && _availableSlots.Count == 0)
-                                            {
-                                                <span>No slots for this date</span>
-                                            }
-                                        </span>
-                                    }
                                 </div>
                                 <span class="clinic-location">@FormatLocation(clinic.City, clinic.Province)</span>
+                                @if (SelectedClinicId == clinic.Id)
+                                {
+                                    <span class="clinic-status">@GetSelectedClinicStatus()</span>
+                                }
+                                else
+                                {
+                                    <span class="clinic-hint">View availability for @SelectedDateShort</span>
+                                }
                             </article>
                         </ItemTemplate>
                     </DxListBox>
                     <ValidationMessage For="() => _bookingForm.ClinicId" class="validation" />
 
                     <div class="availability-section">
-                        <div class="availability-header">
-                            <div class="section-header">Available slots</div>
-                            @if (_isLoadingAvailability)
-                            {
-                                <div class="loading-inline">
-                                    <DxLoadIndicator CssClass="loading-indicator small" />
-                                    <span>Checking availability...</span>
-                                </div>
-                            }
+                        <div class="availability-toolbar">
+                            <div class="availability-heading">
+                                <div class="availability-title">@SelectedClinicHeading</div>
+                                <div class="availability-subtitle">@SelectedClinicSubtitle</div>
+                                <div class="availability-date">@SelectedDateLong</div>
+                            </div>
+                            <div class="date-picker" aria-label="Select appointment date">
+                                <span class="date-picker-icon" aria-hidden="true">📅</span>
+                                <DxDateEdit @bind-Date="SelectedDate"
+                                           MinDate="@DateTime.Today"
+                                           DisplayFormat="dddd, dd MMMM yyyy"
+                                           CssClass="date-picker-editor"
+                                           Enabled="@(!_isSubmitting)" />
+                            </div>
                         </div>
+
+                        @if (_isLoadingAvailability)
+                        {
+                            <div class="loading-inline">
+                                <DxLoadIndicator CssClass="loading-indicator small" />
+                                <span>Checking availability...</span>
+                            </div>
+                        }
 
                         @if (!string.IsNullOrEmpty(_availabilityError))
                         {
@@ -104,24 +116,12 @@
                                    ValueChanged="OnSlotSelected"
                                    Enabled="@(!_isLoadingAvailability && !_isSubmitting)">
                             <ItemTemplate Context="slot">
-                                <span>@FormatSlotRange(slot)</span>
+                                <div class="slot-pill">@FormatSlotRange(slot)</div>
                             </ItemTemplate>
                         </DxListBox>
                         <ValidationMessage For="() => _bookingForm.AppointmentSlotId" class="validation" />
                     </div>
                 </section>
-
-                <div class="dx-fieldset date-fieldset">
-                    <div class="dx-field">
-                        <div class="dx-field-label">Date</div>
-                        <div class="dx-field-value">
-                            <DxDateEdit @bind-Date="SelectedDate"
-                                       MinDate="@DateTime.Today"
-                                       DisplayFormat="dddd, dd MMMM yyyy"
-                                       Enabled="@(!_isSubmitting)" />
-                        </div>
-                    </div>
-                </div>
 
                 <section class="details-section">
                     <div class="section-header">Patient details</div>
@@ -209,6 +209,20 @@
     private bool HasClinics => _clinicSummary?.Clinics.Count > 0;
 
     private int? SelectedClinicId => _bookingForm.ClinicId > 0 ? _bookingForm.ClinicId : null;
+
+    private ClinicSummaryDto? SelectedClinic => _clinicSummary?.Clinics.Find(clinic => clinic.Id == _bookingForm.ClinicId);
+
+    private string SelectedClinicHeading => SelectedClinic is { } clinic
+        ? $"Available slots for {clinic.Name}"
+        : "Available slots";
+
+    private string SelectedClinicSubtitle => SelectedClinic is { } clinic
+        ? FormatLocation(clinic.City, clinic.Province)
+        : "Choose a clinic to display its available slots.";
+
+    private string SelectedDateLong => _selectedDate.ToString("dddd, dd MMMM yyyy", CultureInfo.CurrentCulture);
+
+    private string SelectedDateShort => _selectedDate.ToString("MMM d", CultureInfo.CurrentCulture);
 
     private DateTime SelectedDate
     {
@@ -360,6 +374,28 @@
     {
         _bookingForm.AppointmentSlotId = slotId;
         _submissionError = null;
+    }
+
+    private string GetSelectedClinicStatus()
+    {
+        if (_isLoadingAvailability)
+        {
+            return "Loading slots...";
+        }
+
+        if (!string.IsNullOrEmpty(_availabilityError))
+        {
+            return _availabilityError!;
+        }
+
+        if (_availableSlots.Count == 0)
+        {
+            return $"No slots on {SelectedDateShort}";
+        }
+
+        var count = _availableSlots.Count;
+        var suffix = count == 1 ? "slot" : "slots";
+        return $"{count} available {suffix} on {SelectedDateShort}";
     }
 
     private async Task SubmitAsync()
