@@ -8,18 +8,18 @@ using UI.Services;
 
 namespace UI.Pages;
 
-public sealed partial class Home : IDisposable
+public class HomePage : ComponentBase, IDisposable
 {
-    private readonly BookingFormModel _bookingForm = new();
-    private readonly List<AvailableSlotResponse> _availableSlots = [];
-    private ClinicSummaryResponse? _clinicSummary;
-    private string? _clinicsLoadError;
-    private bool _isLoadingClinics;
-    private bool _isLoadingAvailability;
-    private string? _availabilityError;
-    private bool _isSubmitting;
-    private string? _submissionError;
-    private BookingDetailsResponse? _confirmation;
+    protected readonly BookingFormModel _bookingForm = new();
+    protected readonly List<AvailableSlotResponse> _availableSlots = [];
+    protected ClinicSummaryResponse? _clinicSummary;
+    protected string? _clinicsLoadError;
+    protected bool _isLoadingClinics;
+    protected bool _isLoadingAvailability;
+    protected string? _availabilityError;
+    protected bool _isSubmitting;
+    protected string? _submissionError;
+    protected BookingDetailsResponse? _confirmation;
     private DateOnly _selectedDate = DateOnly.FromDateTime(DateTime.Today);
     private CancellationTokenSource? _availabilityCts;
 
@@ -29,27 +29,27 @@ public sealed partial class Home : IDisposable
     [Inject]
     private AuthState AuthState { get; set; } = default!;
 
-    private bool HasClinics => _clinicSummary?.Clinics.Count > 0;
+    protected bool HasClinics => _clinicSummary?.Clinics.Count > 0;
 
-    private int? SelectedClinicId => _bookingForm.ClinicId > 0 ? _bookingForm.ClinicId : null;
+    protected int? SelectedClinicId => _bookingForm.ClinicId > 0 ? _bookingForm.ClinicId : null;
 
-    private ClinicSummaryDto? SelectedClinic => _clinicSummary?.Clinics.Find(clinic => clinic.Id == _bookingForm.ClinicId);
+    protected ClinicSummaryDto? SelectedClinic => _clinicSummary?.Clinics.Find(clinic => clinic.Id == _bookingForm.ClinicId);
 
-    private string SelectedClinicHeading => SelectedClinic is { } clinic
+    protected string SelectedClinicHeading => SelectedClinic is { } clinic
         ? $"Available slots for {clinic.Name}"
         : "Available slots";
 
-    private string SelectedClinicSubtitle => SelectedClinic is { } clinic
+    protected string SelectedClinicSubtitle => SelectedClinic is { } clinic
         ? FormatLocation(clinic.City, clinic.Province)
         : "Choose a clinic to display its available slots.";
 
-    private string SelectedClinicStatus => GetSelectedClinicStatus();
+    protected string SelectedClinicStatus => GetSelectedClinicStatus();
 
-    private string SelectedDateLong => _selectedDate.ToString("dddd, dd MMMM yyyy", CultureInfo.CurrentCulture);
+    protected string SelectedDateLong => _selectedDate.ToString("dddd, dd MMMM yyyy", CultureInfo.CurrentCulture);
 
-    private string SelectedDateShort => _selectedDate.ToString("MMM d", CultureInfo.CurrentCulture);
+    protected string SelectedDateShort => _selectedDate.ToString("MMM d", CultureInfo.CurrentCulture);
 
-    private DateTime SelectedDate
+    protected DateTime SelectedDate
     {
         get => _selectedDate.ToDateTime(TimeOnly.MinValue);
         set
@@ -116,7 +116,7 @@ public sealed partial class Home : IDisposable
         }
     }
 
-    private void OnClinicSelected(int? clinicId)
+    protected void OnClinicSelected(int? clinicId)
     {
         if (clinicId is null || clinicId.Value <= 0 || clinicId.Value == _bookingForm.ClinicId)
         {
@@ -195,13 +195,13 @@ public sealed partial class Home : IDisposable
         }
     }
 
-    private void OnSlotSelected(int? slotId)
+    protected void OnSlotSelected(int? slotId)
     {
         _bookingForm.AppointmentSlotId = slotId;
         _submissionError = null;
     }
 
-    private Task OnDateChanged(DateTime value)
+    protected Task OnDateChanged(DateTime value)
     {
         SelectedDate = value;
         return Task.CompletedTask;
@@ -229,7 +229,7 @@ public sealed partial class Home : IDisposable
         return $"{count} available {suffix} on {SelectedDateShort}";
     }
 
-    private async Task SubmitAsync()
+    protected async Task SubmitAsync()
     {
         _submissionError = null;
         _confirmation = null;
