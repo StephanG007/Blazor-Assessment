@@ -25,18 +25,18 @@ public class BookingService(AppDbContext db) : IBookingService
         
         var availableSlots = await db.AppointmentSlots
             .AsNoTracking()
-            .Include(a => a.Booking)
-            .Where(slot => slot.ClinicId == clinicId
-                && slot.IsActive
-                && slot.StartTime >= dayStart
-                && slot.StartTime < dayEnd)
-            .OrderBy(slot => slot.StartTime)
-            .Select(slot => new AvailableSlotResponse(
-                slot.Id,
-                slot.StartTime,
-                slot.EndTime,
-                slot.Booking != null,
-                slot.Booking != null ? slot.Booking.Id : null))
+            .Include(s => s.Booking)
+            .Where(s => s.ClinicId == clinicId
+                && s.IsActive
+                && s.StartTime >= dayStart
+                && s.StartTime < dayEnd)
+            .OrderBy(s => s.StartTime)
+            .Select(s => new AvailableSlotResponse(
+                s.Id,
+                s.StartTime,
+                s.EndTime,
+                s.Booking != null,
+                s.Booking != null ? (int?)s.Booking.Id : null))
             .ToListAsync(cancellationToken);
 
         return availableSlots;
@@ -86,9 +86,7 @@ public class BookingService(AppDbContext db) : IBookingService
             .FirstOrDefaultAsync(b => b.Id == bookingId, ct);
 
         if (booking is null)
-        {
             throw new KeyNotFoundException($"Booking with id {bookingId} was not found.");
-        }
 
         db.Bookings.Remove(booking);
         await db.SaveChangesAsync(ct);

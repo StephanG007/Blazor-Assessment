@@ -1,9 +1,11 @@
+using System.Linq.Expressions;
 using API.Data.Entities;
 using API.Interfaces;
 using Contracts.Account;
 using Contracts.Bookings;
 using Contracts.Clinics;
 using Contracts.Users;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace API.Extensions;
 
@@ -60,4 +62,10 @@ public static class DtoConversions
             clinic.PhoneNumber,
             clinic.LogoBase64);
     }
+
+    public static readonly Expression<Func<AppointmentSlot, AvailableSlotResponse>> ToSlotResponse =
+        s => new AvailableSlotResponse(
+            s.Id, s.StartTime, s.EndTime,
+            s.Booking != null,
+            s.Booking!.Id);
 }

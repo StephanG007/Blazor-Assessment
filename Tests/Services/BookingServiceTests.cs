@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Text.Json;
 using API.Data;
 using API.Data.Entities;
 using API.Services;
@@ -25,22 +26,16 @@ public class BookingServiceTests
             f.Behaviors.Add(new OmitOnRecursionBehavior());
 
             // Keep IDs and navs clean; we'll set only what we need in tests
-            f.Customize<Clinic>(c =>
-                c.Without(x => x.Id));
+            f.Customize<Clinic>(c => c
+                .Without(x => x.Id)
+                .Without(x => x.AppointmentSlots));
 
             f.Customize<AppointmentSlot>(c =>
                 c.Without(x => x.Id)
                  .Without(x => x.Clinic)
                  .Without(x => x.Booking)
                  .With(x => x.IsActive, true)); // default to active
-
-            f.Customize<Booking>(c =>
-                c.Without(x => x.Id)
-                 .Without(x => x.Clinic)
-                 .Without(x => x.AppointmentSlot)
-                 .With(x => x.CreatedAt, DateTime.UtcNow));
-
-            // Fresh DbContext per test
+            
             f.Register(() =>
             {
                 var options = new DbContextOptionsBuilder<AppDbContext>()
@@ -49,57 +44,77 @@ public class BookingServiceTests
                 return new AppDbContext(options);
             });
 
+            f.Freeze<AppDbContext>();
+
             return f;
         }) { }
     }
 
     [Theory, AutoDbData]
-    public async Task GetAvailableSlotsAsync_returns_active_slots_with_booking_status(
+    public async Task GetAvailableSlotsAsync_returns_all_and_marks_booked_correctly(
         AppDbContext context, IFixture fixture, Clinic clinic)
     {
         // Arrange
         context.Clinics.Add(clinic);
         await context.SaveChangesAsync();
 
-        var day = DateTime.UtcNow.Date;
+        // Use a fixed day and explicit window [day, day+1)
+        var day = DateOnly.FromDateTime(DateTime.UtcNow);
+        var from = day;
+        var to   = day.AddDays(1);
 
-        var availableEarly = fixture.Build<AppointmentSlot>()
+        // Prevent accidental graph creation
+        fixture.Customize<AppointmentSlot>(c => c
+            .Without(s => s.Clinic)
+            .Without(s => s.Booking)   // never auto-create
+            .With(s => s.IsActive, true));
+
+        fixture.Customize<Booking>(c => c
+            .Without(b => b.AppointmentSlot)); // never auto-create
+
+        var t0 = day.ToDateTime(TimeOnly.MinValue);
+        var s1_available = fixture.Build<AppointmentSlot>()
             .With(s => s.ClinicId, clinic.Id)
-            .With(s => s.StartTime, day.AddHours(9))
-            .With(s => s.EndTime,   day.AddHours(10))
+            .With(s => s.Clinic, clinic)
+            .With(s => s.IsActive, true)
             .Without(s => s.Booking)
-            .Without(s => s.Clinic)
+            .With(s => s.StartTime, t0.AddHours(9)).With(s => s.EndTime, t0.AddHours(10))
             .Create();
 
-        var availableLate = fixture.Build<AppointmentSlot>()
+        var s2_inactive = fixture.Build<AppointmentSlot>()
             .With(s => s.ClinicId, clinic.Id)
-            .With(s => s.StartTime, day.AddHours(15))
-            .With(s => s.EndTime,   day.AddHours(16))
+            .With(s => s.Clinic, clinic)
             .Without(s => s.Booking)
-            .Without(s => s.Clinic)
+            .With(s => s.StartTime, t0.AddHours(11)).With(s => s.EndTime, t0.AddHours(12))
+            .With(s => s.IsActive, false)
             .Create();
 
-        var inactiveSlot = fixture.Build<AppointmentSlot>()
-            .With(s => s.ClinicId, clinic.Id)
-            .With(s => s.StartTime, day.AddHours(11))
-            .With(s => s.EndTime,   day.AddHours(12))
-            .With(s => s.IsActive,  false)
+        var s3_booked = fixture.Build<AppointmentSlot>()
             .Without(s => s.Booking)
-            .Without(s => s.Clinic)
+            .With(s => s.IsActive, true)
+            .With(s => s.Clinic, clinic)
+            .With(s => s.ClinicId, clinic.Id).With(s => s.StartTime, t0.AddHours(13)).With(s => s.EndTime, t0.AddHours(14))
             .Create();
 
-        var bookedSlot = fixture.Build<AppointmentSlot>()
+        var s4_available = fixture.Build<AppointmentSlot>()
             .With(s => s.ClinicId, clinic.Id)
-            .With(s => s.StartTime, day.AddHours(13))
-            .With(s => s.EndTime,   day.AddHours(14))
-            .Without(s => s.Clinic)
+            .With(s => s.Clinic, clinic)
+            .With(s => s.IsActive, true)
+            .Without(s => s.Booking)
+            .With(s => s.StartTime, t0.AddHours(15)).With(s => s.EndTime, t0.AddHours(16))
             .Create();
 
-        context.AppointmentSlots.AddRange(availableEarly, availableLate, inactiveSlot, bookedSlot);
+        var defaultSlots = context.AppointmentSlots.ToList();
+        
+        context.AppointmentSlots.AddRange(s1_available, s2_inactive, s3_booked, s4_available);
         await context.SaveChangesAsync();
+
+        var clinics = context.Clinics.ToList();
+        var slotsJSON = await context.AppointmentSlots.ToListAsync();
         
         var booking = fixture.Build<Booking>()
-            .With(b => b.AppointmentSlotId, bookedSlot.Id)
+            .With(b => b.AppointmentSlotId, s3_booked.Id)
+            .With(b => b.AppointmentSlot, s3_booked)
             .Create();
 
         context.Bookings.Add(booking);
@@ -108,16 +123,16 @@ public class BookingServiceTests
         var service = new BookingService(context);
 
         // Act
-        var slots = await service.GetAvailableSlotsAsync(clinic.Id, null, null);
+        var slots = await service.GetAvailableSlotsAsync(clinic.Id, from, to);
 
-        // Assert
-        slots.Should().BeEquivalentTo(new[]
-        {
-            new AvailableSlotResponse(availableEarly.Id, availableEarly.StartTime, availableEarly.EndTime, false, null),
-            new AvailableSlotResponse(bookedSlot.Id,     bookedSlot.StartTime,     bookedSlot.EndTime,     true,  booking.Id),
-            new AvailableSlotResponse(availableLate.Id,  availableLate.StartTime,  availableLate.EndTime,  false, null),
-        }, opts => opts.WithStrictOrdering());
+        // Assert (ordered)
+        slots.Should().BeEquivalentTo([
+            new AvailableSlotResponse(s1_available.Id, s1_available.StartTime, s1_available.EndTime, false, null),
+            new AvailableSlotResponse(s3_booked.Id, s3_booked.StartTime, s3_booked.EndTime, true,  booking.Id),
+            new AvailableSlotResponse(s4_available.Id, s4_available.StartTime, s4_available.EndTime, false, null)
+        ], opts => opts.WithStrictOrdering());
     }
+
 
     [Theory, AutoDbData]
     public async Task CreateBookingAsync_persists_and_returns_details_for_new_booking(
@@ -218,6 +233,7 @@ public class BookingServiceTests
 
         var slot = fixture.Build<AppointmentSlot>()
             .With(s => s.ClinicId, clinic.Id)
+            .Without(s => s.Booking)
             .Create();
 
         context.AppointmentSlots.Add(slot);
