@@ -1,5 +1,4 @@
-# Clinic Booking System (Codex Assistant Guide)
-
+# Clinic Booking System
 ## 🧭 Overview
 This repository implements a simplified **Clinic Booking System** for the Department of Health and Wellness.  
 It consists of a **Blazor WebAssembly frontend** and an **ASP.NET Core Web API backend**, with a shared `Contracts` project defining data models.
