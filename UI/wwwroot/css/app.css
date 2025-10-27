@@ -114,5 +114,7 @@ code {
 }
 
 .mud-paper {
+    padding: 1.15rem !important;
     margin: 1.25rem !important;
 }
+
