@@ -3,12 +3,6 @@
 This repository implements a simplified **Clinic Booking System** for the Department of Health and Wellness.  
 It consists of a **Blazor WebAssembly frontend** and an **ASP.NET Core Web API backend**, with a shared `Contracts` project defining data models.
 
-The purpose of this README is to help **Codex** understand:
-- how to build, run, and test the project, and  
-- how to automatically fix or iterate on failed builds.
-
----
-
 ## 🧩 Architecture Summary
 
 | Component | Description |
