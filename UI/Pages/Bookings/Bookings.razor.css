@@ -49,11 +49,13 @@
 }
 
 .booking-panel {
+    --booking-panel-border-color: rgba(103, 80, 164, 0.08);
+    --booking-panel-shadow-color: rgba(32, 31, 69, 0.06);
     padding: clamp(1.75rem, 2.5vw, 2.5rem);
     border-radius: 24px;
     background: linear-gradient(180deg, rgba(255, 255, 255, 0.82) 0%, rgba(255, 255, 255, 0.95) 100%);
-    box-shadow: 0 20px 40px rgba(32, 31, 69, 0.06);
-    border: 1px solid rgba(103, 80, 164, 0.08);
+    box-shadow: 0 20px 40px var(--booking-panel-shadow-color);
+    border: 1px solid var(--booking-panel-border-color);
     width: 100%;
 }
 

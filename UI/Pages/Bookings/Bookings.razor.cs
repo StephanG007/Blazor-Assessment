@@ -22,6 +22,9 @@ public sealed partial class Bookings : ComponentBase, IDisposable
     private bool IsLoadingAvailability { get; set; }
     private string? ClinicsError { get; set; }
     private string? AvailabilityError { get; set; }
+    private string AvailabilityPanelClass => SelectedClinic is null
+        ? "booking-panel booking-panel--availability"
+        : $"booking-panel booking-panel--availability {ClinicAccentHelper.GetAccentClass(SelectedClinic.Id)}";
 
     private IReadOnlyList<DailyAvailability> ClinicAvailability =>
         SelectedClinic is not null && _currentAvailabilityClinicId == SelectedClinic.Id

@@ -72,22 +72,3 @@
     margin-top: 0.25rem;
 }
 
-.clinic-card--accent-1 {
-    --clinic-card-border-color: rgba(24, 119, 242, 0.45);
-    --clinic-card-shadow-color: rgba(24, 119, 242, 0.28);
-}
-
-.clinic-card--accent-2 {
-    --clinic-card-border-color: rgba(0, 184, 212, 0.45);
-    --clinic-card-shadow-color: rgba(0, 184, 212, 0.28);
-}
-
-.clinic-card--accent-3 {
-    --clinic-card-border-color: rgba(255, 152, 0, 0.45);
-    --clinic-card-shadow-color: rgba(255, 152, 0, 0.28);
-}
-
-.clinic-card--accent-4 {
-    --clinic-card-border-color: rgba(124, 77, 255, 0.45);
-    --clinic-card-shadow-color: rgba(124, 77, 255, 0.28);
-}
