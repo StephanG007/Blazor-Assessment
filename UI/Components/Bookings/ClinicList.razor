@@ -29,12 +29,16 @@
         }
         else
         {
-            @for (var i = 0; i < Clinics.Count; i++)
+            var accentIndex = 0;
+
+            foreach (var clinic in Clinics)
             {
+                var accentClass = GetAccentClass(accentIndex++);
+
                 <MudItem xs="12" sm="6" md="4" lg="3">
-                    <ClinicCard Clinic="@Clinics[i]"
-                                AccentClass="@GetAccentClass(i)"
-                                Selected="@IsSelected(Clinics[i])"
+                    <ClinicCard Clinic="@clinic"
+                                AccentClass="@accentClass"
+                                Selected="@IsSelected(clinic)"
                                 OnSelected="OnClinicSelected" />
                 </MudItem>
             }
