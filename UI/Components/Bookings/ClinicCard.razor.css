@@ -1,21 +1,24 @@
 .clinic-card {
+    --clinic-card-border-color: rgba(103, 80, 164, 0.18);
+    --clinic-card-shadow-color: rgba(103, 80, 164, 0.18);
     cursor: pointer;
     border-radius: 22px;
     transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease;
     min-height: 180px;
     display: flex;
-    border: 1px solid rgba(103, 80, 164, 0.12);
+    border: 1px solid var(--clinic-card-border-color);
+    box-shadow: 0 12px 28px var(--clinic-card-shadow-color);
     background: linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, rgba(255, 255, 255, 0.88) 100%);
 }
 
 .clinic-card:hover {
     transform: translateY(-6px);
-    box-shadow: 0 18px 36px rgba(32, 31, 69, 0.12);
+    box-shadow: 0 18px 36px var(--clinic-card-shadow-color);
 }
 
 .clinic-card--selected {
-    border: 2px solid var(--mud-palette-primary);
-    box-shadow: 0 24px 40px rgba(103, 80, 164, 0.18);
+    border: 2px solid var(--clinic-card-border-color);
+    box-shadow: 0 24px 40px var(--clinic-card-shadow-color);
 }
 
 .clinic-card__content {

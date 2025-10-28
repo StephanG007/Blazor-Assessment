@@ -66,7 +66,28 @@
     [Parameter]
     public EventCallback<ClinicSummary> OnSelected { get; set; }
 
-    private string CardClass => Selected ? "clinic-card clinic-card--selected" : "clinic-card";
+    [Parameter]
+    public string? AccentClass { get; set; }
+
+    private string CardClass
+    {
+        get
+        {
+            var classes = new List<string> { "clinic-card" };
+
+            if (Selected)
+            {
+                classes.Add("clinic-card--selected");
+            }
+
+            if (!string.IsNullOrWhiteSpace(AccentClass))
+            {
+                classes.Add(AccentClass);
+            }
+
+            return string.Join(" ", classes);
+        }
+    }
 
     private Task HandleClick() => OnSelected.InvokeAsync(Clinic);
 }
