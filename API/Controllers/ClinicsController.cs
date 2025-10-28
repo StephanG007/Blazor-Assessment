@@ -1,10 +1,9 @@
-using API.Data;
-using API.Extensions;
+using System;
 using API.Interfaces;
 using Contracts.Clinics;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 namespace API.Controllers;
 
@@ -20,12 +19,12 @@ public class ClinicsController(IClinicService clinicService) : ControllerBase
         {
             var clinics = await clinicService.GetClinics(cancellationToken);
 
-            return new ClinicSummaryResponse { Success = true, Clinics = clinics };
+            return Ok(new ClinicSummaryResponse { Success = true, Clinics = clinics });
         }
         catch (Exception ex)
         {
             NoteException("api/Clinics/GetClinics", null, ex);
-            return BadRequest();
+            return Problem(title: "Unable to load clinics", statusCode: StatusCodes.Status500InternalServerError);
         }
     }
 
@@ -34,3 +33,4 @@ public class ClinicsController(IClinicService clinicService) : ControllerBase
         // PRETEND FANCY IMPLEMENTATION 
     }
 }
+

@@ -1,10 +1,11 @@
+using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text.Json;
 using API.Interfaces;
 using Contracts.Bookings;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 
 namespace API.Controllers;
@@ -22,18 +23,11 @@ public class BookingController(IBookingService bookingService) : ControllerBase
         {
             var result = await bookingService.GetAvailableSlotsAsync(clinicId, startDate, endDate, cancellationToken);
 
-            if(result.Status == ServiceStatus.NotFound)
-                return NotFound();
-
-            return Ok(result.Data);
+            return HandleResult(result);
         }
-        catch(Exception ex)
+        catch (Exception ex)
         {
-            NoteException($"api/Booking/clinics/{clinicId}/availability{Request.QueryString.Value}", null, ex);
-            
-            return Problem(
-                title: "An unexpected error occurred",
-                statusCode: StatusCodes.Status500InternalServerError);
+            return HandleUnexpected($"api/Booking/clinics/{clinicId}/availability{Request.QueryString.Value}", null, ex);
         }
     }
 
@@ -47,24 +41,11 @@ public class BookingController(IBookingService bookingService) : ControllerBase
         {
             var result = await bookingService.CreateBookingAsync(request, cancellationToken);
 
-            switch (result.Status)
-            {
-                case ServiceStatus.Success:
-                    return Ok(result.Data);
-                case ServiceStatus.Conflict:
-                    return Conflict(result.Data);
-                case ServiceStatus.NotFound:
-                    return NotFound();
-                default:
-                    throw new Exception($"Unexpected Service Status: {result.Status}");
-            }
+            return HandleResult(result);
         }
         catch (Exception ex)
         {
-            NoteException("api/Booking/Create", JsonSerializer.Serialize(request), ex);
-            return Problem(
-                title: "An unexpected error occurred",
-                statusCode: StatusCodes.Status500InternalServerError);
+            return HandleUnexpected("api/Booking/Create", JsonSerializer.Serialize(request), ex);
         }
     }
 
@@ -75,24 +56,11 @@ public class BookingController(IBookingService bookingService) : ControllerBase
         {
             var result = await bookingService.GetBookingByIdAsync(id, cancellationToken);
 
-            switch (result.Status)
-            {
-                case ServiceStatus.Success:
-                    return Ok(result.Data);
-                case ServiceStatus.NotFound:
-                    return NotFound();
-                case ServiceStatus.Conflict:
-                    return Conflict(result.Data);
-                default:
-                    throw new Exception($"Unexpected Service Status: {result.Status}");
-            }
+            return HandleResult(result);
         }
-        catch(Exception ex)
+        catch (Exception ex)
         {
-            NoteException($"api/Booking/{id}", null, ex);
-            return Problem(
-                title: "An unexpected error occurred",
-                statusCode: StatusCodes.Status500InternalServerError);
+            return HandleUnexpected($"api/Booking/{id}", null, ex);
         }
     }
 
@@ -102,20 +70,31 @@ public class BookingController(IBookingService bookingService) : ControllerBase
         try
         {
             var result = await bookingService.DeleteBookingAsync(id, cancellationToken);
-            
-            if(result.Status != ServiceStatus.Success)
-                throw new Exception("An unexpected error occurred");
-            
-            return Ok("Successfully Deleted");
+
+            return HandleResult(result, _ => NoContent());
         }
         catch (Exception ex)
         {
-            NoteException($"api/Booking/{id}", null, ex);
-
-            return Problem(
-                title: "An unexpected error occurred",
-                statusCode: StatusCodes.Status500InternalServerError);
+            return HandleUnexpected($"api/Booking/{id}", null, ex);
         }
+    }
+
+    private const string UnexpectedErrorTitle = "An unexpected error occurred";
+
+    private IActionResult HandleResult<T>(ServiceResult<T> result, Func<T?, IActionResult>? onSuccess = null) =>
+        result.Status switch
+        {
+            ServiceStatus.Success => onSuccess?.Invoke(result.Data) ?? Ok(result.Data),
+            ServiceStatus.NotFound => result.Errors.Any() ? NotFound(result.Errors) : NotFound(),
+            ServiceStatus.Conflict => result.Errors.Any() ? Conflict(result.Errors) : Conflict(),
+            ServiceStatus.Unauthorized => result.Errors.Any() ? Unauthorized(result.Errors) : Unauthorized(),
+            _ => Problem(title: UnexpectedErrorTitle, statusCode: StatusCodes.Status500InternalServerError)
+        };
+
+    private ObjectResult HandleUnexpected(string url, string? payload, Exception ex)
+    {
+        NoteException(url, payload, ex);
+        return Problem(title: UnexpectedErrorTitle, statusCode: StatusCodes.Status500InternalServerError);
     }
 
     private void NoteException(string url, string? payload, Exception ex)
@@ -123,3 +102,4 @@ public class BookingController(IBookingService bookingService) : ControllerBase
         // PRETEND FANCY IMPLEMENTATION LIVES HERE.
     }
 }
+

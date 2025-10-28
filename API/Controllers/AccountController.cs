@@ -1,6 +1,6 @@
+using API.Extensions;
 using API.Data.Entities;
 using API.Interfaces;
-using API.Extensions;
 using Contracts.Account;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -10,16 +10,20 @@ namespace API.Controllers;
 
 [Route("api/[controller]")]
 [ApiController]
-public class AccountController(UserManager<User> db, ITokenService tokenService) : ControllerBase
+public class AccountController(UserManager<User> userManager, ITokenService tokenService) : ControllerBase
 {
     [HttpPost("login")]
     public async Task<ActionResult<LoginResponse>> Login(LoginRequest dto)
     {
-        var user = await db.Users.SingleOrDefaultAsync(x => x.Email == dto.Email);
-        var result = await db.CheckPasswordAsync(user!, dto.Password);
+        var user = await userManager.Users.SingleOrDefaultAsync(x => x.Email == dto.Email);
 
-        if (!result) return Unauthorized("Invalid email or password");
+        if (user is null || !await userManager.CheckPasswordAsync(user, dto.Password))
+        {
+            return Unauthorized("Invalid email or password");
+        }
 
-        return await user!.ToLoginResponse(tokenService);
+        var response = await user.ToLoginResponse(tokenService);
+
+        return Ok(response);
     }
 }

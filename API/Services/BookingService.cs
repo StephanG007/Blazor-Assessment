@@ -1,9 +1,9 @@
+using System;
 using System.Collections.Generic;
 using API.Data;
 using API.Data.Entities;
 using API.Extensions;
 using API.Interfaces;
-using Bogus.DataSets;
 using Contracts.Bookings;
 using Microsoft.EntityFrameworkCore;
 
@@ -18,28 +18,25 @@ public class BookingService(AppDbContext db) : IBookingService
             .AnyAsync(clinic => clinic.Id == clinicId, cancellationToken);
 
         if (!clinicExists)
-            return new ServiceResult<List<AvailableSlotResponse>>(){ Status = ServiceStatus.NotFound,Data = [], Errors = ["Clinic does not exist."] };
-        
+        {
+            return ServiceResult<List<AvailableSlotResponse>>.NotFound("Clinic does not exist.");
+        }
+
         var dayStart = startDate?.ToDateTime(TimeOnly.MinValue) ?? DateTime.Today;
         var dayEnd = endDate?.ToDateTime(TimeOnly.MaxValue) ?? DateTime.Today.AddDays(7);
-        
+
         var availableSlots = await db.AppointmentSlots
             .AsNoTracking()
-            .Include(s => s.Booking)
-            .Where(s => s.ClinicId == clinicId
-                && s.IsActive
-                && s.StartTime >= dayStart
-                && s.StartTime < dayEnd)
-            .OrderBy(s => s.StartTime)
-            .Select(s => new AvailableSlotResponse(
-                s.Id,
-                s.StartTime,
-                s.EndTime,
-                s.Booking != null,
-                s.Booking != null ? (int?)s.Booking.Id : null))
+            .Include(slot => slot.Booking)
+            .Where(slot => slot.ClinicId == clinicId
+                && slot.IsActive
+                && slot.StartTime >= dayStart
+                && slot.StartTime < dayEnd)
+            .OrderBy(slot => slot.StartTime)
+            .Select(DtoConversions.ToSlotResponse)
             .ToListAsync(cancellationToken);
 
-        return new ServiceResult<List<AvailableSlotResponse>> { Status = ServiceStatus.Success, Data = availableSlots};
+        return ServiceResult<List<AvailableSlotResponse>>.Success(availableSlots);
     }
 
     public async Task<ServiceResult<BookingDetailsResponse>> CreateBookingAsync(BookingRequest request, CancellationToken ct = default)
@@ -51,10 +48,14 @@ public class BookingService(AppDbContext db) : IBookingService
                                     && slot.ClinicId == request.ClinicId
                                     && slot.IsActive, ct);
         if (slot == null)
-            return new ServiceResult<BookingDetailsResponse>() { Status = ServiceStatus.NotFound };
+        {
+            return ServiceResult<BookingDetailsResponse>.NotFound();
+        }
 
         if (slot.Booking != null)
-            return new ServiceResult<BookingDetailsResponse>() { Status = ServiceStatus.Conflict };
+        {
+            return ServiceResult<BookingDetailsResponse>.Conflict();
+        }
 
         var booking = new Booking {
             AppointmentSlotId = request.AppointmentSlotId,
@@ -68,7 +69,7 @@ public class BookingService(AppDbContext db) : IBookingService
         db.Bookings.Add(booking);
         await db.SaveChangesAsync(ct);
 
-        return new ServiceResult<BookingDetailsResponse>() { Status = ServiceStatus.Success, Data = booking.ToDetailsResponse() };
+        return ServiceResult<BookingDetailsResponse>.Success(booking.ToDetailsResponse());
     }
 
     public async Task<ServiceResult<BookingDetailsResponse>> GetBookingByIdAsync(int bookingId, CancellationToken ct = default)
@@ -82,9 +83,11 @@ public class BookingService(AppDbContext db) : IBookingService
             .FirstOrDefaultAsync(ct);
 
         if (booking == null)
-            return new ServiceResult<BookingDetailsResponse>() { Status = ServiceStatus.NotFound };
-        
-        return new ServiceResult<BookingDetailsResponse>() { Status = ServiceStatus.Success,  Data = booking };
+        {
+            return ServiceResult<BookingDetailsResponse>.NotFound();
+        }
+
+        return ServiceResult<BookingDetailsResponse>.Success(booking);
     }
 
     public async Task<ServiceResult<BookingDetailsResponse>> DeleteBookingAsync(int bookingId, CancellationToken ct = default)
@@ -93,11 +96,14 @@ public class BookingService(AppDbContext db) : IBookingService
             .FirstOrDefaultAsync(b => b.Id == bookingId, ct);
 
         if (booking is null)
-            return new ServiceResult<BookingDetailsResponse>() { Status = ServiceStatus.NotFound };
+        {
+            return ServiceResult<BookingDetailsResponse>.NotFound();
+        }
 
         db.Bookings.Remove(booking);
         await db.SaveChangesAsync(ct);
-        
-        return new ServiceResult<BookingDetailsResponse>(){Status = ServiceStatus.Success };
+
+        return ServiceResult<BookingDetailsResponse>.Success();
     }
 }
+

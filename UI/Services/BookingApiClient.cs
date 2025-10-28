@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
@@ -37,28 +38,19 @@ public sealed class BookingApiClient(HttpClient httpClient)
             throw new BookingRequestException(message, response.StatusCode);
         }
 
-        var body = await response.Content.ReadAsStringAsync(ct);
-
-        var confirmation = await response.Content.ReadFromJsonAsync<BookingDetailsResponse>(SerializerOptions, ct);
-
-        return confirmation;
+        return await response.Content.ReadFromJsonAsync<BookingDetailsResponse>(SerializerOptions, ct);
     }
 
     public async Task<BookingDetailsResponse?> GetBookingByIdAsync(int bookingId, CancellationToken ct = default)
     {
         using var response = await httpClient.GetAsync($"api/booking/{bookingId}", ct);
 
-        if (response.StatusCode == HttpStatusCode.NotFound)
+        return response.StatusCode switch
         {
-            return null;
-        }
-
-        if (!response.IsSuccessStatusCode)
-        {
-            throw new BookingRequestException("We couldn't load booking details right now. Please try again.", response.StatusCode);
-        }
-
-        return await response.Content.ReadFromJsonAsync<BookingDetailsResponse>(SerializerOptions, ct);
+            HttpStatusCode.NotFound => null,
+            _ when response.IsSuccessStatusCode => await response.Content.ReadFromJsonAsync<BookingDetailsResponse>(SerializerOptions, ct),
+            _ => throw new BookingRequestException("We couldn't load booking details right now. Please try again.", response.StatusCode)
+        };
     }
 
     public async Task DeleteBookingAsync(int bookingId, CancellationToken ct = default)
@@ -79,3 +71,4 @@ public sealed class BookingApiClient(HttpClient httpClient)
         throw new BookingRequestException(message, response.StatusCode);
     }
 }
+
