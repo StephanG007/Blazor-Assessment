@@ -11,14 +11,14 @@ namespace API.Services;
 
 public class BookingService(AppDbContext db) : IBookingService
 {
-    public async Task<IReadOnlyList<AvailableSlotResponse>?> GetAvailableSlotsAsync(int clinicId, DateOnly? startDate, DateOnly? endDate, CancellationToken cancellationToken = default)
+    public async Task<ServiceResult<List<AvailableSlotResponse>>> GetAvailableSlotsAsync(int clinicId, DateOnly? startDate, DateOnly? endDate, CancellationToken cancellationToken = default)
     {
         var clinicExists = await db.Clinics
             .AsNoTracking()
             .AnyAsync(clinic => clinic.Id == clinicId, cancellationToken);
 
         if (!clinicExists)
-            return null;
+            return new ServiceResult<List<AvailableSlotResponse>>(){ Status = ServiceStatus.NotFound,Data = [], Errors = ["Clinic does not exist."] };
         
         var dayStart = startDate?.ToDateTime(TimeOnly.MinValue) ?? DateTime.Today;
         var dayEnd = endDate?.ToDateTime(TimeOnly.MaxValue) ?? DateTime.Today.AddDays(7);
@@ -39,20 +39,22 @@ public class BookingService(AppDbContext db) : IBookingService
                 s.Booking != null ? (int?)s.Booking.Id : null))
             .ToListAsync(cancellationToken);
 
-        return availableSlots;
+        return new ServiceResult<List<AvailableSlotResponse>> { Status = ServiceStatus.Success, Data = availableSlots};
     }
 
-    public async Task<BookingDetailsResponse> CreateBookingAsync(BookingRequest request, CancellationToken ct = default)
+    public async Task<ServiceResult<BookingDetailsResponse>> CreateBookingAsync(BookingRequest request, CancellationToken ct = default)
     {
         var slot = await db.AppointmentSlots
             .Include(slot => slot.Clinic)
+            .Include(slot => slot.Booking)
             .FirstOrDefaultAsync(slot => slot.Id == request.AppointmentSlotId
                                     && slot.ClinicId == request.ClinicId
                                     && slot.IsActive, ct);
-            
-
         if (slot == null)
-            throw new InvalidOperationException($"Appointment slot with id {request.AppointmentSlotId} was not available.");
+            return new ServiceResult<BookingDetailsResponse>() { Status = ServiceStatus.NotFound };
+
+        if (slot.Booking != null)
+            return new ServiceResult<BookingDetailsResponse>() { Status = ServiceStatus.Conflict };
 
         var booking = new Booking {
             AppointmentSlotId = request.AppointmentSlotId,
@@ -65,30 +67,37 @@ public class BookingService(AppDbContext db) : IBookingService
 
         db.Bookings.Add(booking);
         await db.SaveChangesAsync(ct);
-        
-        return booking.ToDetailsResponse();
+
+        return new ServiceResult<BookingDetailsResponse>() { Status = ServiceStatus.Success, Data = booking.ToDetailsResponse() };
     }
 
-    public async Task<BookingDetailsResponse?> GetBookingByIdAsync(int bookingId, CancellationToken ct = default)
+    public async Task<ServiceResult<BookingDetailsResponse>> GetBookingByIdAsync(int bookingId, CancellationToken ct = default)
     {
-        return await db.Bookings
+        var booking = await db.Bookings
             .AsNoTracking()
             .Where(b => b.Id == bookingId)
             .Include(b => b.AppointmentSlot)
                 .ThenInclude(a => a.Clinic)
             .Select(b => b.ToDetailsResponse())
             .FirstOrDefaultAsync(ct);
+
+        if (booking == null)
+            return new ServiceResult<BookingDetailsResponse>() { Status = ServiceStatus.NotFound };
+        
+        return new ServiceResult<BookingDetailsResponse>() { Status = ServiceStatus.Success,  Data = booking };
     }
 
-    public async Task DeleteBookingAsync(int bookingId, CancellationToken ct = default)
+    public async Task<ServiceResult<BookingDetailsResponse>> DeleteBookingAsync(int bookingId, CancellationToken ct = default)
     {
         var booking = await db.Bookings
             .FirstOrDefaultAsync(b => b.Id == bookingId, ct);
 
         if (booking is null)
-            throw new KeyNotFoundException($"Booking with id {bookingId} was not found.");
+            return new ServiceResult<BookingDetailsResponse>() { Status = ServiceStatus.NotFound };
 
         db.Bookings.Remove(booking);
         await db.SaveChangesAsync(ct);
+        
+        return new ServiceResult<BookingDetailsResponse>(){Status = ServiceStatus.Success };
     }
 }

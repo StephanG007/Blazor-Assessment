@@ -37,6 +37,8 @@ public sealed class BookingApiClient(HttpClient httpClient)
             throw new BookingRequestException(message, response.StatusCode);
         }
 
+        var body = await response.Content.ReadAsStringAsync(ct);
+
         var confirmation = await response.Content.ReadFromJsonAsync<BookingDetailsResponse>(SerializerOptions, ct);
 
         return confirmation;

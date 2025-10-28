@@ -4,6 +4,7 @@ using API.Interfaces;
 using Contracts.Bookings;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 
 namespace API.Controllers;
@@ -19,12 +20,12 @@ public class BookingController(IBookingService bookingService) : ControllerBase
     {
         try
         {
-            var availableSlots = await bookingService.GetAvailableSlotsAsync(clinicId, startDate, endDate, cancellationToken);
+            var result = await bookingService.GetAvailableSlotsAsync(clinicId, startDate, endDate, cancellationToken);
 
-            if(availableSlots is null)
+            if(result.Status == ServiceStatus.NotFound)
                 return NotFound();
 
-            return Ok(availableSlots);
+            return Ok(result.Data);
         }
         catch(Exception ex)
         {
@@ -44,16 +45,19 @@ public class BookingController(IBookingService bookingService) : ControllerBase
 
         try
         {
-            var confirmation = await bookingService.CreateBookingAsync(request, cancellationToken);
+            var result = await bookingService.CreateBookingAsync(request, cancellationToken);
 
-            return Ok(confirmation);
-        }
-        catch (InvalidOperationException ex)
-        {
-            return Problem(
-                title: "Slot unavailable",
-                detail: ex.Message,
-                statusCode: StatusCodes.Status409Conflict);
+            switch (result.Status)
+            {
+                case ServiceStatus.Success:
+                    return Ok(result.Data);
+                case ServiceStatus.Conflict:
+                    return Conflict(result.Data);
+                case ServiceStatus.NotFound:
+                    return NotFound();
+                default:
+                    throw new Exception($"Unexpected Service Status: {result.Status}");
+            }
         }
         catch (Exception ex)
         {
@@ -69,11 +73,19 @@ public class BookingController(IBookingService bookingService) : ControllerBase
     {
         try
         {
-            var booking = await bookingService.GetBookingByIdAsync(id, cancellationToken);
+            var result = await bookingService.GetBookingByIdAsync(id, cancellationToken);
 
-            if (booking == null) return NotFound();
-
-            return Ok(booking);
+            switch (result.Status)
+            {
+                case ServiceStatus.Success:
+                    return Ok(result.Data);
+                case ServiceStatus.NotFound:
+                    return NotFound();
+                case ServiceStatus.Conflict:
+                    return Conflict(result.Data);
+                default:
+                    throw new Exception($"Unexpected Service Status: {result.Status}");
+            }
         }
         catch(Exception ex)
         {
@@ -89,8 +101,12 @@ public class BookingController(IBookingService bookingService) : ControllerBase
     {
         try
         {
-            await bookingService.DeleteBookingAsync(id, cancellationToken);
-            return NoContent();
+            var result = await bookingService.DeleteBookingAsync(id, cancellationToken);
+            
+            if(result.Status != ServiceStatus.Success)
+                throw new Exception("An unexpected error occurred");
+            
+            return Ok("Successfully Deleted");
         }
         catch (Exception ex)
         {

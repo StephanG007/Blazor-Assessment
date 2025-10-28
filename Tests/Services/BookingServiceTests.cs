@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Text.Json;
 using API.Data;
 using API.Data.Entities;
+using API.Interfaces;
 using API.Services;
 using Contracts.Bookings;
 using FluentAssertions;
@@ -126,14 +127,13 @@ public class BookingServiceTests
         var slots = await service.GetAvailableSlotsAsync(clinic.Id, from, to);
 
         // Assert (ordered)
-        slots.Should().BeEquivalentTo([
+        slots.Data.Should().BeEquivalentTo([
             new AvailableSlotResponse(s1_available.Id, s1_available.StartTime, s1_available.EndTime, false, null),
             new AvailableSlotResponse(s3_booked.Id, s3_booked.StartTime, s3_booked.EndTime, true,  booking.Id),
             new AvailableSlotResponse(s4_available.Id, s4_available.StartTime, s4_available.EndTime, false, null)
         ], opts => opts.WithStrictOrdering());
     }
-
-
+    
     [Theory, AutoDbData]
     public async Task CreateBookingAsync_persists_and_returns_details_for_new_booking(
         AppDbContext context, IFixture fixture, Clinic clinic)
@@ -141,8 +141,6 @@ public class BookingServiceTests
         // Arrange
         context.Clinics.Add(clinic);
         await context.SaveChangesAsync();
-
-        var slots = context.AppointmentSlots.ToList();
 
         var day = DateTime.UtcNow.Date;
 
@@ -164,28 +162,28 @@ public class BookingServiceTests
 
         var service = new BookingService(context);
 
-        // act
+        // Act
         var result = await service.CreateBookingAsync(request);
 
-        // assert (response)
-        result.ClinicName.Should().Be(clinic.Name);
-        result.StartTime.Should().Be(slot.StartTime);
-        result.EndTime.Should().Be(slot.EndTime);
-        result.PatientName.Should().Be(request.PatientName);
-        result.PatientEmail.Should().Be(request.PatientEmail);
-        result.Notes.Should().Be(request.Notes);
+        // Assert (response)
+        result.Data?.ClinicName.Should().Be(clinic.Name);
+        result.Data?.StartTime.Should().Be(slot.StartTime);
+        result.Data?.EndTime.Should().Be(slot.EndTime);
+        result.Data?.PatientName.Should().Be(request.PatientName);
+        result.Data?.PatientEmail.Should().Be(request.PatientEmail);
+        result.Data?.Notes.Should().Be(request.Notes);
 
-        // assert (persistence)
+        // Assert (persistence)
         var persisted = await context.Bookings.Include(b => b.AppointmentSlot).SingleAsync();
         persisted.AppointmentSlotId.Should().Be(slot.Id);
         persisted.PatientEmail.Should().Be(request.PatientEmail);
     }
 
     [Theory, AutoDbData]
-    public async Task CreateBookingAsync_throws_when_slot_already_booked(
+    public async Task CreateBookingAsync_ReturnsConflict_if_aLready_booked(
         AppDbContext context, IFixture fixture, Clinic clinic)
     {
-        // arrange
+        // Arrange
         context.Clinics.Add(clinic);
         await context.SaveChangesAsync();
 
@@ -193,19 +191,19 @@ public class BookingServiceTests
 
         var slot = fixture.Build<AppointmentSlot>()
             .With(s => s.ClinicId, clinic.Id)
+            .With(s => s.Clinic, clinic)
             .With(s => s.StartTime, day.AddHours(12))
             .With(s => s.EndTime,   day.AddHours(13))
             .Create();
 
-        context.AppointmentSlots.Add(slot);
-        await context.SaveChangesAsync();
-
-        // existing booking for that slot
-        var existing = fixture.Build<Booking>()
+        var existingBooking = fixture.Build<Booking>()
             .With(b => b.AppointmentSlotId, slot.Id)
+            .With(b => b.AppointmentSlot, slot)
             .Create();
-
-        context.Bookings.Add(existing);
+        
+        context.AppointmentSlots.Add(slot);
+        context.Bookings.Add(existingBooking);
+        
         await context.SaveChangesAsync();
 
         var request = fixture.Build<BookingRequest>()
@@ -215,12 +213,11 @@ public class BookingServiceTests
 
         var service = new BookingService(context);
 
-        // act
-        var act = async () => await service.CreateBookingAsync(request);
+        // Act
+        var result = await service.CreateBookingAsync(request);
 
-        // assert
-        await act.Should().ThrowAsync<Exception>()
-            .WithMessage($"Appointment slot with id {slot.Id} was not available.");
+        // Assert
+        result.Status.Should().Be(ServiceStatus.Conflict);
     }
 
     [Theory, AutoDbData]
@@ -249,23 +246,23 @@ public class BookingServiceTests
         var service = new BookingService(context);
 
         // act
-        await service.DeleteBookingAsync(booking.Id);
+        var result = await service.DeleteBookingAsync(booking.Id);
 
         // assert
-        (await context.Bookings.CountAsync()).Should().Be(0);
+        result.Status.Should().Be(ServiceStatus.Success);
+        context.Bookings.Count().Should().Be(0);
     }
 
     [Theory, AutoDbData]
-    public async Task DeleteBookingAsync_throws_when_booking_not_found(AppDbContext context)
+    public async Task DeleteBookingAsync_returnts_NotFound_when_booking_not_found(AppDbContext context)
     {
         // arrange
         var service = new BookingService(context);
 
         // act
-        var act = async () => await service.DeleteBookingAsync(12345);
+        var result = await service.DeleteBookingAsync(12345);
 
         // assert
-        await act.Should().ThrowAsync<KeyNotFoundException>()
-            .WithMessage("Booking with id 12345 was not found.");
+        result.Status.Should().Be(ServiceStatus.NotFound);
     }
 }
