@@ -29,11 +29,9 @@
         }
         else
         {
-            var accentIndex = 0;
-
             foreach (var clinic in Clinics)
             {
-                var accentClass = GetAccentClass(accentIndex++);
+                var accentClass = ClinicAccentHelper.GetAccentClass(clinic.Id);
 
                 <MudItem xs="12" sm="6" md="4" lg="3">
                     <ClinicCard Clinic="@clinic"
@@ -60,5 +58,4 @@
 
     private Task OnClinicSelected(ClinicSummary clinic) => SelectedClinicChanged.InvokeAsync(clinic);
 
-    private static string GetAccentClass(int index) => $"clinic-card--accent-{(index % 4) + 1}";
 }
