@@ -29,10 +29,15 @@
         }
         else
         {
-            @foreach (var clinic in Clinics)
+            var accentIndex = 0;
+
+            foreach (var clinic in Clinics)
             {
+                var accentClass = GetAccentClass(accentIndex++);
+
                 <MudItem xs="12" sm="6" md="4" lg="3">
-                    <ClinicCard Clinic="clinic"
+                    <ClinicCard Clinic="@clinic"
+                                AccentClass="@accentClass"
                                 Selected="@IsSelected(clinic)"
                                 OnSelected="OnClinicSelected" />
                 </MudItem>
@@ -54,4 +59,6 @@
     private bool IsSelected(ClinicSummary clinic) => SelectedClinic?.Id == clinic.Id;
 
     private Task OnClinicSelected(ClinicSummary clinic) => SelectedClinicChanged.InvokeAsync(clinic);
+
+    private static string GetAccentClass(int index) => $"clinic-card--accent-{(index % 4) + 1}";
 }
