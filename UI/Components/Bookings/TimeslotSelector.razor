@@ -2,8 +2,8 @@
 @namespace UI.Components.Bookings
 
 <MudStack Spacing="3" Class="timeslot-selector">
-    <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Class="timeslot-header">
-        <MudStack Class="timeslot-header__content">
+    <MudStack Row="true" AlignItems="AlignItems.End" Justify="Justify.SpaceBetween" Class="timeslot-header">
+        <MudStack Class="timeslot-header__content mud-grid-item-md-10">
             <MudText Typo="Typo.h5" Class="timeslot-title">
                 @if (Clinic is null)
                 {
@@ -21,7 +21,8 @@
                             MinDate="@MinDate"
                             Class="timeslot-date-picker"
                             Variant="Variant.Outlined"
-                            Color="Color.Secondary" />
+                            Color="Color.Secondary" 
+                            Style="width:30px;"/>
     </MudStack>
 
     <MudDivider />

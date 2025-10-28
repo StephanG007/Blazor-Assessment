@@ -35,16 +35,23 @@
             @if (!IsAuthenticated)
             {
                 <MudPaper Elevation="3" Class="guest-placeholder">
-                    <MudAvatar Color="Color.Primary"
-                               Size="Size.Large"
-                               Variant="Variant.Filled"
-                               Class="guest-placeholder__avatar">
-                        <MudIcon Icon="@Icons.Material.Filled.Lock" />
-                    </MudAvatar>
-                    <MudText Typo="Typo.h4" Class="guest-placeholder__title">Welcome to the clinic booking portal</MudText>
-                    <MudText Typo="Typo.body1" Class="guest-placeholder__description">
-                        Log in using the form above to browse clinics, view availability, and book appointments.
-                    </MudText>
+                    <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="4">
+                        <MudAvatar Color="Color.Primary"
+                                   Size="Size.Large"
+                                   Variant="Variant.Filled"
+                                   Class="guest-placeholder__avatar">
+                            <MudIcon Icon="@Icons.Material.Filled.Lock" />
+                        </MudAvatar>
+
+                        <MudStack>
+                            <MudText Typo="Typo.h4" Class="guest-placeholder__title">
+                                Welcome to the clinic booking portal
+                            </MudText>
+                            <MudText Typo="Typo.body1" Class="guest-placeholder__description">
+                                Log in using the form above to browse clinics, view availability, and book appointments.
+                            </MudText>
+                        </MudStack>
+                    </MudStack>
                 </MudPaper>
             }
             else
