@@ -1,3 +1,4 @@
+
 # Clinic Booking System
 ## 🧭 Overview
 This repository implements a simplified **Clinic Booking System** for the Department of Health and Wellness.  
@@ -24,6 +25,48 @@ Key libraries:
 
 All .NET projects are built using **.NET 9.0** (or **.NET 8.0** if 9.0 SDK unavailable).
 
+First, create a Dev certificate for HTTPS
+```bash
+dotnet dev-certs https --trust
+```
+
+Om Linux, this certificate will need to be registered on the OS:
+
+<table>
+<tr>
+<td width="50%">
+
+<pre><code class="language-bash">
+// UBUNTU / DEBIAN
+sudo cp ~/.dotnet/corefx/cryptography/x509stores/my/* /usr/local/share/ca-certificates/
+sudo update-ca-certificates
+</code></pre>
+
+</td>
+<td width="50%">
+
+<pre><code class="language-bash">
+// RPM / FEDORA
+dotnet dev-certs https --export-path /tmp/aspnet-dev-cert.pem --format PEM
+sudo trust anchor /tmp/aspnet-dev-cert.pem
+</code></pre>
+
+</td>
+</tr>
+</table>
+
+To run API (from API folder):
 ```bash
 dotnet restore
-dotnet build --configuration Release
+dotnet run
+```
+
+To run frontend (from UI folder):
+```bash
+dotnet restore
+dotnet run
+```
+
+
+
+
