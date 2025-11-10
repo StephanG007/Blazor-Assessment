@@ -4,8 +4,6 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Contracts.Users;
-using DevExtreme.AspNet.Data.ResponseModel;
-using static DevExtreme.AspNet.Data.DataSourceLoader;
 
 namespace API.Controllers;
 
@@ -16,7 +14,7 @@ public class UsersController(AppDbContext db) : ControllerBase
 {
     [HttpGet]
     [Authorize(Policy = "RequireAdminRole")]
-    public async Task<ActionResult<LoadResult>> GetUsers(CancellationToken ct = default)
+    public async Task<ActionResult<IEnumerable<UserListResponse>>> GetUsers(CancellationToken ct = default)
     {
         var users = await db.Users
             .AsNoTracking()
