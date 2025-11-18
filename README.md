@@ -67,6 +67,13 @@ dotnet restore
 dotnet run
 ```
 
+## 🔐 Login Instructions
 
+To access the Blazor UI and test the system, log in with the following credentials:
+
+- **Username:** `bruce@wayne.co.za`
+- **Password:** `P@ssw0rd`
+
+Once logged in, you can browse clinics, create bookings, and explore the system’s functionality.
 
 
